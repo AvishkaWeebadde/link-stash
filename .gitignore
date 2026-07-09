@@ -51,3 +51,6 @@ next-env.d.ts
 
 # Desktop build: staged sidecar resources (generated)
 /src-tauri/resources
+
+# Icon source raster (generated from icon-src.svg)
+/src-tauri/icon-src.png

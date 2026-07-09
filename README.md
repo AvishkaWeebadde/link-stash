@@ -13,14 +13,23 @@ offline, your data in a folder you control. Open source.
 
 ---
 
+## ⬇️ Download
+
+Grab the latest installer from the
+[**Releases**](https://github.com/AvishkaWeebadde/link-stash/releases) page
+(Windows `.exe`). Installers are built automatically by CI on every tagged
+release. Prefer to build it yourself? See [Desktop app](#️-desktop-app-tauri).
+
+---
+
 ## ✨ Features
 
-- **Save anything**
-  - 🌐 **Web articles** — paste a URL; LinkStash fetches the page and extracts a
+- **Save anything** — organized by what it *is*, not its file format:
+  - 🌐 **Articles** — paste a URL; LinkStash fetches the page and extracts a
     clean, ad-free reading copy (powered by Mozilla Readability, the engine
     behind Firefox Reader View).
-  - 📄 **PDFs** — import research papers and read them in-app with page tracking.
-  - 📖 **EPUB books** — read with pagination and resume-where-you-left-off.
+  - 📄 **Papers** & 📖 **Books** — import PDFs or EPUBs and choose how to file
+    them. In-app reader with page/location tracking and resume-where-you-left-off.
   - 📝 **Notes** — jot standalone notes that live alongside your sources.
 - **Read beautifully** — a calm, paper-like reader with light/dark themes and a
   serif reading typeface.
@@ -148,12 +157,23 @@ prisma/
 
 ## 🗺️ Roadmap
 
-- [ ] Inline text-layer highlighting for PDFs (currently: reading + progress)
-- [ ] Import/export (OPML, Pocket, browser bookmarks)
-- [ ] Browser extension for one-click saving
+Planned next:
+
+- [ ] **Bookmarks** — save a spot in a document to jump back to.
+- [ ] **Section notes** — attach a note to a selected passage (beyond highlights).
+- [ ] **Read aloud** — a voice assistant that reads the selection or whole item
+      (text-to-speech), with play/pause and follow-along.
+- [ ] **Look up & explore** — select text to get a definition and related results
+      from the web.
+- [ ] Inline text-layer highlighting for PDFs (currently: reading + progress).
+
+Later:
+
+- [ ] Import/export (OPML, Pocket, browser bookmarks).
+- [ ] Browser extension for one-click saving.
+- [ ] Auto-update + code-signed installers; macOS/Linux release builds.
 - [ ] Optional AI features (auto-tagging, summaries, "ask your library") —
-      designed to be opt-in and bring-your-own-key
-- [ ] Postgres deployment guide
+      opt-in, bring-your-own-key.
 
 ## 🤝 Contributing
 

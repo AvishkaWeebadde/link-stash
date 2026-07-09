@@ -1,0 +1,23 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e08a1e"/>
+      <stop offset="1" stop-color="#b45309"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="224" fill="url(#bg)"/>
+  <!-- open book: two pages meeting at the spine -->
+  <path d="M150 400 L512 372 L512 690 L150 662 Z" fill="#fffdf8"/>
+  <path d="M874 400 L512 372 L512 690 L874 662 Z" fill="#ffffff"/>
+  <!-- page lines -->
+  <g stroke="#e7d9c4" stroke-width="10" stroke-linecap="round">
+    <line x1="212" y1="452" x2="470" y2="432"/>
+    <line x1="212" y1="512" x2="470" y2="492"/>
+    <line x1="212" y1="572" x2="470" y2="552"/>
+    <line x1="554" y1="432" x2="812" y2="452"/>
+    <line x1="554" y1="492" x2="812" y2="512"/>
+    <line x1="554" y1="552" x2="812" y2="572"/>
+  </g>
+  <!-- bookmark ribbon -->
+  <path d="M486 372 L538 372 L538 800 L512 772 L486 800 Z" fill="#ef4444"/>
+</svg>
