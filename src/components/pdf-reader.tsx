@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { updateProgress } from "@/app/actions/items";
+import ReadAloud from "@/components/read-aloud";
 
 export default function PdfReader({
   itemId,
@@ -20,6 +21,7 @@ export default function PdfReader({
   const [numPages, setNumPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pageText, setPageText] = useState("");
 
   // Load the document once.
   useEffect(() => {
@@ -72,6 +74,16 @@ export default function PdfReader({
       await task.promise;
     } catch {
       /* cancelled render */
+    }
+
+    // Extract the page's text so Read aloud can speak it.
+    try {
+      const tc = await pageObj.getTextContent();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const txt = tc.items.map((it: any) => it.str ?? "").join(" ");
+      setPageText(txt);
+    } catch {
+      setPageText("");
     }
   }, []);
 
@@ -135,6 +147,12 @@ export default function PdfReader({
           {loading ? "Loading…" : `Page ${page} / ${numPages}`}
         </span>
         <NavBtn onClick={() => go(1)} disabled={page >= numPages} label="›" />
+        {pageText && (
+          <>
+            <span className="h-4 w-px bg-line" />
+            <ReadAloud text={pageText} />
+          </>
+        )}
       </div>
       <div ref={containerRef} className="flex justify-center">
         <canvas ref={canvasRef} className="rounded-lg shadow-sm" />

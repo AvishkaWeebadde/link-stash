@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { updateProgress } from "@/app/actions/items";
 import { createHighlight } from "@/app/actions/highlights";
+import ReadAloud from "@/components/read-aloud";
 import {
   HIGHLIGHT_COLORS,
   HIGHLIGHT_COLOR_HEX,
@@ -26,6 +27,7 @@ export default function EpubReader({
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pct, setPct] = useState(0);
+  const [sectionText, setSectionText] = useState("");
   const [selection, setSelection] = useState<{ cfi: string; text: string } | null>(
     null,
   );
@@ -53,6 +55,24 @@ export default function EpubReader({
         await rendition.display(initialCfi || undefined);
         if (cancelled) return;
         setReady(true);
+        updateSectionText(rendition);
+
+        function updateSectionText(r: {
+          getContents: () => unknown;
+        }) {
+          try {
+            const raw = r.getContents();
+            const arr = Array.isArray(raw) ? raw : [raw];
+            const text = arr
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              .map((c: any) => c?.document?.body?.innerText ?? "")
+              .join("\n")
+              .trim();
+            setSectionText(text);
+          } catch {
+            setSectionText("");
+          }
+        }
 
         // Re-apply saved highlights.
         for (const hl of highlights) {
@@ -72,6 +92,7 @@ export default function EpubReader({
           if (cfi) {
             updateProgress(itemId, percentage, cfi).catch(() => {});
           }
+          updateSectionText(rendition);
         });
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -132,6 +153,7 @@ export default function EpubReader({
           />
         </div>
         <span className="w-10 text-right text-xs text-muted">{pct}%</span>
+        {sectionText && <ReadAloud text={sectionText} />}
       </div>
 
       <div className="relative rounded-xl border border-line bg-surface">

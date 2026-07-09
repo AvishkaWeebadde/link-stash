@@ -29,6 +29,12 @@ document.addEventListener('click', function (e) {
     window.location.assign(href);
   }
 }, true);
+
+// Suppress the WebView's default (browser) context menu — it only offers
+// Reload/Back/Inspect, which make no sense in a desktop app.
+document.addEventListener('contextmenu', function (e) {
+  e.preventDefault();
+}, false);
 "#;
 
 /// Whether a navigation target is a genuinely external website (as opposed to
