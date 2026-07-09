@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import AppShell from "@/components/app-shell";
 import { requireUser, getCurrentUser } from "@/lib/dal";
+import { IS_LOCAL } from "@/lib/mode";
 import {
   getSidebarCounts,
   listCollections,
@@ -27,6 +28,7 @@ export default async function AppLayout({
         counts={counts}
         collections={collections}
         tags={tags}
+        isLocal={IS_LOCAL}
       >
         {children}
       </AppShell>

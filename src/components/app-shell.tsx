@@ -22,12 +22,14 @@ export default function AppShell({
   counts,
   collections,
   tags,
+  isLocal = false,
   children,
 }: {
   user: { name: string; email: string };
   counts: Counts;
   collections: NamedCount[];
   tags: TagCount[];
+  isLocal?: boolean;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -159,21 +161,25 @@ export default function AppShell({
         <div className="border-t border-line p-3">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-sm font-semibold text-accent-fg">
-              {user.name.charAt(0).toUpperCase()}
+              {isLocal ? "📚" : user.name.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{user.name}</p>
-              <p className="truncate text-xs text-muted">{user.email}</p>
+              <p className="truncate text-xs text-muted">
+                {isLocal ? "Local library" : user.email}
+              </p>
             </div>
-            <form action={logout}>
-              <button
-                type="submit"
-                title="Sign out"
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition hover:bg-surface-2 hover:text-fg"
-              >
-                ⎋
-              </button>
-            </form>
+            {!isLocal && (
+              <form action={logout}>
+                <button
+                  type="submit"
+                  title="Sign out"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition hover:bg-surface-2 hover:text-fg"
+                >
+                  ⎋
+                </button>
+              </form>
+            )}
           </div>
         </div>
       </aside>
