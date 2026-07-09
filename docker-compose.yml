@@ -1,0 +1,18 @@
+services:
+  linkstash:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      # SQLite database stored on the persistent volume below.
+      DATABASE_URL: "file:./prisma/dev.db"
+      # Set this in a .env file next to this compose file, or export it.
+      SESSION_SECRET: "${SESSION_SECRET:?Set SESSION_SECRET (e.g. openssl rand -base64 32)}"
+    volumes:
+      - linkstash-db:/app/prisma
+      - linkstash-uploads:/app/uploads
+    restart: unless-stopped
+
+volumes:
+  linkstash-db:
+  linkstash-uploads:

@@ -1,0 +1,119 @@
+// LinkStash schema — your personal knowledge library.
+// Docs: https://pris.ly/d/prisma-schema
+// Note: SQLite does not support Prisma enums, so "type"/"status" are plain
+// strings validated at the application layer (see src/lib/constants.ts).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  items       Item[]
+  tags        Tag[]
+  collections Collection[]
+  highlights  Highlight[]
+}
+
+model Item {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // "article" | "pdf" | "epub" | "note"
+  type String @default("article")
+  // "unread" | "reading" | "archived"
+  status   String  @default("unread")
+  favorite Boolean @default(false)
+
+  title    String
+  url      String? // source URL for articles
+  author   String?
+  siteName String?
+  excerpt  String? // short summary / dek
+  lang     String?
+
+  // Rendered, sanitized HTML (articles/notes) shown in the reader.
+  contentHtml String?
+  // Plain text used for full-text search + word count.
+  textContent String?
+  wordCount   Int?
+
+  coverImage String? // article lead image or book cover
+  filePath   String? // relative path under /uploads for pdf/epub
+
+  // Reading progress for books/papers: 0..1, plus a resume locator
+  // (EPUB CFI or PDF page number serialized as string).
+  progress Float   @default(0)
+  locator  String?
+
+  savedAt   DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tags        Tag[]        @relation("ItemTags")
+  collections Collection[] @relation("ItemCollections")
+  highlights  Highlight[]
+
+  @@index([userId, status])
+  @@index([userId, type])
+  @@index([userId, savedAt])
+}
+
+model Tag {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name  String
+  color String @default("#6366f1")
+
+  items Item[] @relation("ItemTags")
+
+  @@unique([userId, name])
+}
+
+model Collection {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  items Item[] @relation("ItemCollections")
+
+  @@unique([userId, name])
+}
+
+model Highlight {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId String
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  text  String
+  note  String?
+  color String @default("yellow")
+
+  // Where the highlight lives in the source, so we can re-anchor it:
+  // articles -> a text-quote/offset JSON; PDF -> page + rects JSON; EPUB -> CFI.
+  locator String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([itemId])
+}

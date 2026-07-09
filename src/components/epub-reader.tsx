@@ -1,0 +1,202 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { updateProgress } from "@/app/actions/items";
+import { createHighlight } from "@/app/actions/highlights";
+import {
+  HIGHLIGHT_COLORS,
+  HIGHLIGHT_COLOR_HEX,
+  type HighlightColor,
+} from "@/lib/constants";
+
+type ExistingHighlight = { id: string; color: string; locator: string | null };
+
+export default function EpubReader({
+  itemId,
+  initialCfi,
+  highlights,
+}: {
+  itemId: string;
+  initialCfi: string | null;
+  highlights: ExistingHighlight[];
+}) {
+  const viewerRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const renditionRef = useRef<any>(null);
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pct, setPct] = useState(0);
+  const [selection, setSelection] = useState<{ cfi: string; text: string } | null>(
+    null,
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    let book: { destroy: () => void } | null = null;
+
+    (async () => {
+      try {
+        const ePub = (await import("epubjs")).default;
+        if (cancelled || !viewerRef.current) return;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const b: any = ePub(`/files/${itemId}`);
+        book = b;
+        const rendition = b.renderTo(viewerRef.current, {
+          width: "100%",
+          height: "100%",
+          flow: "paginated",
+          spread: "auto",
+        });
+        renditionRef.current = rendition;
+
+        await rendition.display(initialCfi || undefined);
+        if (cancelled) return;
+        setReady(true);
+
+        // Re-apply saved highlights.
+        for (const hl of highlights) {
+          if (hl.locator) addAnnotation(rendition, hl.locator, hl.color);
+        }
+
+        // Generate locations for percentage-based progress (best effort).
+        b.ready
+          .then(() => b.locations.generate(1000))
+          .catch(() => {});
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        rendition.on("relocated", (loc: any) => {
+          const percentage = loc?.start?.percentage ?? 0;
+          const cfi = loc?.start?.cfi ?? "";
+          setPct(Math.round(percentage * 100));
+          if (cfi) {
+            updateProgress(itemId, percentage, cfi).catch(() => {});
+          }
+        });
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        rendition.on("selected", (cfiRange: string, contents: any) => {
+          const text = contents?.window?.getSelection?.().toString().trim() ?? "";
+          if (text.length >= 2) setSelection({ cfi: cfiRange, text });
+        });
+      } catch {
+        if (!cancelled) setError("Could not open this book.");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      try {
+        book?.destroy();
+      } catch {}
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemId]);
+
+  async function saveHighlight(color: HighlightColor) {
+    const rendition = renditionRef.current;
+    if (!selection || !rendition) return;
+    addAnnotation(rendition, selection.cfi, color);
+    try {
+      await createHighlight({
+        itemId,
+        text: selection.text,
+        locator: selection.cfi,
+        color,
+      });
+    } catch {}
+    // Clear the in-book selection.
+    try {
+      rendition.getContents().forEach((c: { window: Window }) =>
+        c.window.getSelection()?.removeAllRanges(),
+      );
+    } catch {}
+    setSelection(null);
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-xl border border-dashed border-line p-8 text-center text-muted">
+        {error}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="mb-3 flex items-center gap-3">
+        <div className="h-1 flex-1 overflow-hidden rounded-full bg-surface-2">
+          <div
+            className="h-full rounded-full bg-accent transition-all"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <span className="w-10 text-right text-xs text-muted">{pct}%</span>
+      </div>
+
+      <div className="relative rounded-xl border border-line bg-surface">
+        <button
+          onClick={() => renditionRef.current?.prev()}
+          className="absolute left-0 top-0 z-10 flex h-full w-10 items-center justify-center text-2xl text-faint transition hover:bg-surface-2 hover:text-fg"
+          aria-label="Previous page"
+        >
+          ‹
+        </button>
+        <div ref={viewerRef} className="mx-10 h-[72vh]" />
+        <button
+          onClick={() => renditionRef.current?.next()}
+          className="absolute right-0 top-0 z-10 flex h-full w-10 items-center justify-center text-2xl text-faint transition hover:bg-surface-2 hover:text-fg"
+          aria-label="Next page"
+        >
+          ›
+        </button>
+        {!ready && (
+          <div className="absolute inset-0 flex items-center justify-center text-muted">
+            Loading book…
+          </div>
+        )}
+      </div>
+
+      {selection && (
+        <div className="fixed inset-x-0 bottom-6 z-50 flex justify-center">
+          <div className="flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-2 shadow-lg">
+            <span className="mr-1 text-sm text-muted">Highlight:</span>
+            {HIGHLIGHT_COLORS.map((c) => (
+              <button
+                key={c}
+                onClick={() => saveHighlight(c)}
+                className="h-7 w-7 rounded-full border border-line transition hover:scale-110"
+                style={{ background: HIGHLIGHT_COLOR_HEX[c] }}
+                aria-label={`Highlight ${c}`}
+              />
+            ))}
+            <button
+              onClick={() => setSelection(null)}
+              className="ml-1 px-2 text-muted hover:text-fg"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function addAnnotation(rendition: any, cfiRange: string, color: string) {
+  const hex =
+    HIGHLIGHT_COLOR_HEX[color as HighlightColor] ?? HIGHLIGHT_COLOR_HEX.yellow;
+  try {
+    rendition.annotations.add(
+      "highlight",
+      cfiRange,
+      {},
+      undefined,
+      "linkstash-hl",
+      { fill: hex, "fill-opacity": "0.4" },
+    );
+  } catch {
+    /* ignore duplicate/invalid cfi */
+  }
+}

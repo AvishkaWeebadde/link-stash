@@ -1,26 +1,208 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+  LinkStash design system — a calm, paper-like reading environment.
+  Light + dark are both first-class. Colors are exposed to Tailwind via
+  @theme so we can use `bg-surface`, `text-muted`, `border-line`, etc.
+*/
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root {
+  --bg: #f7f6f3;
+  --surface: #ffffff;
+  --surface-2: #f0eee9;
+  --line: #e4e1da;
+  --fg: #1f1d1a;
+  --muted: #6b675f;
+  --faint: #9a958c;
+  --accent: #b45309; /* warm amber-700, "ink stamp" */
+  --accent-fg: #ffffff;
+  --accent-soft: #fef3e2;
+  --ring: #d97706;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #16150f;
+    --surface: #201e17;
+    --surface-2: #2a2820;
+    --line: #37342a;
+    --fg: #ece8df;
+    --muted: #a39d90;
+    --faint: #77726699;
+    --accent: #f59e0b;
+    --accent-fg: #201e17;
+    --accent-soft: #2c2515;
+    --ring: #f59e0b;
   }
 }
 
+/* Explicit theme toggle wins over the OS preference in both directions. */
+:root[data-theme="light"] {
+  --bg: #f7f6f3;
+  --surface: #ffffff;
+  --surface-2: #f0eee9;
+  --line: #e4e1da;
+  --fg: #1f1d1a;
+  --muted: #6b675f;
+  --faint: #9a958c;
+  --accent: #b45309;
+  --accent-fg: #ffffff;
+  --accent-soft: #fef3e2;
+  --ring: #d97706;
+}
+
+:root[data-theme="dark"] {
+  --bg: #16150f;
+  --surface: #201e17;
+  --surface-2: #2a2820;
+  --line: #37342a;
+  --fg: #ece8df;
+  --muted: #a39d90;
+  --faint: #776f66;
+  --accent: #f59e0b;
+  --accent-fg: #201e17;
+  --accent-soft: #2c2515;
+  --ring: #f59e0b;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-serif: Charter, "Iowan Old Style", Georgia, Cambria, "Times New Roman",
+    serif;
+}
+
+* {
+  border-color: var(--line);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Thin, unobtrusive scrollbars. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--fg);
+}
+
+/*
+  .prose — typographic styles for the reader view (article/note bodies).
+  Kept dependency-free (no @tailwindcss/typography) so the app stays lean.
+*/
+.prose {
+  font-family: var(--font-serif);
+  font-size: 1.19rem;
+  line-height: 1.75;
+  color: var(--fg);
+  max-width: 42rem;
+}
+.prose p {
+  margin: 1.15em 0;
+}
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  font-family: var(--font-sans);
+  font-weight: 650;
+  line-height: 1.25;
+  margin: 1.8em 0 0.6em;
+}
+.prose h1 {
+  font-size: 1.8em;
+}
+.prose h2 {
+  font-size: 1.45em;
+}
+.prose h3 {
+  font-size: 1.2em;
+}
+.prose a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prose img,
+.prose figure,
+.prose video {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1.5em 0;
+}
+.prose figcaption {
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 0.5em;
+}
+.prose blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 1em;
+  margin: 1.4em 0;
+  color: var(--muted);
+  font-style: italic;
+}
+.prose pre {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--surface-2);
+  padding: 1em;
+  border-radius: 0.6rem;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  background: var(--surface-2);
+  padding: 0.15em 0.4em;
+  border-radius: 0.3rem;
+}
+.prose pre code {
+  background: none;
+  padding: 0;
+}
+.prose ul,
+.prose ol {
+  margin: 1.1em 0;
+  padding-left: 1.5em;
+}
+.prose li {
+  margin: 0.4em 0;
+}
+.prose hr {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 2.5em 0;
+}
+
+/* Highlight marks rendered inside the reader. */
+.prose mark[data-hl],
+mark[data-hl] {
+  padding: 0.05em 0;
+  border-radius: 0.15em;
+  cursor: pointer;
+  color: inherit;
 }

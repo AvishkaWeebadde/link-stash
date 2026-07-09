@@ -1,36 +1,133 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📚 LinkStash
 
-## Getting Started
+**Your personal knowledge library.** Save articles, research papers (PDF), and
+books (EPUB) in one place. Read them distraction-free, highlight passages, take
+notes, organize with tags and collections, and search across everything you've
+ever read.
 
-First, run the development server:
+Self-hosted. Open source. Your data stays yours.
+
+> Built as a modern, own-your-data alternative to read-later apps — extended for
+> research and book reading.
+
+---
+
+## ✨ Features
+
+- **Save anything**
+  - 🌐 **Web articles** — paste a URL; LinkStash fetches the page and extracts a
+    clean, ad-free reading copy (powered by Mozilla Readability, the engine
+    behind Firefox Reader View).
+  - 📄 **PDFs** — import research papers and read them in-app with page tracking.
+  - 📖 **EPUB books** — read with pagination and resume-where-you-left-off.
+  - 📝 **Notes** — jot standalone notes that live alongside your sources.
+- **Read beautifully** — a calm, paper-like reader with light/dark themes and a
+  serif reading typeface.
+- **Highlight & annotate** — select text to highlight (five colors), attach
+  notes, and review all highlights per item.
+- **Organize** — tag items, group them into collections, and mark
+  unread / reading / archived. Star your favorites.
+- **Search everything** — full-text search across titles, content, and more,
+  powered by SQLite FTS5 with relevance ranking.
+- **Multi-user** — real accounts with secure sessions; each person's library is
+  private to them.
+- **Self-hostable** — SQLite by default (zero setup), a Docker image for
+  one-command deployment, and a clean path to Postgres for scale.
+
+## 🛠️ Tech stack
+
+| Layer            | Choice                                             |
+| ---------------- | -------------------------------------------------- |
+| Framework        | [Next.js 16](https://nextjs.org) (App Router) + React 19 |
+| Language         | TypeScript                                         |
+| Styling          | Tailwind CSS v4                                    |
+| Database / ORM   | SQLite + [Prisma](https://www.prisma.io) (Postgres-ready) |
+| Search           | SQLite FTS5 full-text index                        |
+| Auth             | Custom sessions — `jose` (JWT) + `bcrypt`, no vendor lock-in |
+| Article extract  | `@mozilla/readability` + `jsdom` + `DOMPurify`     |
+| PDF / EPUB       | `pdfjs-dist` / `epub.js`                           |
+
+Everything runs locally with no third-party services required.
+
+## 🚀 Getting started
+
+**Prerequisites:** Node.js 20.19+ (or 22.13+) and npm.
 
 ```bash
+# 1. Install dependencies (also generates the Prisma client + copies the PDF worker)
+npm install
+
+# 2. Create your environment file
+cp .env.example .env
+#    then set SESSION_SECRET — generate one with:
+#    openssl rand -base64 32
+
+# 3. Set up the database
+npm run db:migrate
+
+# 4. Start the dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open <http://localhost:3000>, create an account, and start stashing.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🐳 Running with Docker
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Provide a session secret (or put it in a .env file next to the compose file)
+export SESSION_SECRET="$(openssl rand -base64 32)"
 
-## Learn More
+docker compose up --build
+```
 
-To learn more about Next.js, take a look at the following resources:
+The SQLite database and uploaded files are stored in named volumes, so your
+library survives container restarts and rebuilds.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📂 Project structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/
+├── app/
+│   ├── (auth)/            # login & signup (public)
+│   ├── (app)/             # authenticated app: library + reader
+│   │   ├── library/       # the grid, with filters & search
+│   │   └── read/[id]/     # the reader (article / note / PDF / EPUB)
+│   ├── files/[id]/        # owner-scoped file serving for uploads
+│   └── actions/           # Server Actions (auth, items, highlights, …)
+├── components/            # UI (reader, sidebar, dialogs, …)
+├── lib/                   # db, session, DAL, extraction, search, storage
+└── generated/prisma/      # generated Prisma client (gitignored)
+prisma/
+└── schema.prisma          # data model
+```
 
-## Deploy on Vercel
+## 🔐 How it works (a quick tour)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Auth** uses stateless, signed JWT sessions stored in an httpOnly cookie.
+  A small **Data Access Layer** (`src/lib/dal.ts`) verifies the session and is
+  called close to every data read/write — including inside every Server Action.
+- **Saving an article** fetches the page server-side, runs Readability to pull
+  out the main content, sanitizes the HTML with DOMPurify, resolves relative
+  image URLs, and stores a clean copy plus plain text for search.
+- **Search** maintains a SQLite FTS5 virtual table alongside your items and
+  ranks results by relevance with highlighted snippets.
+- **Highlights** on articles are anchored by character offsets into the
+  content; on EPUBs they use EPUB CFI ranges via epub.js annotations.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🗺️ Roadmap
+
+- [ ] Inline text-layer highlighting for PDFs (currently: reading + progress)
+- [ ] Import/export (OPML, Pocket, browser bookmarks)
+- [ ] Browser extension for one-click saving
+- [ ] Optional AI features (auto-tagging, summaries, "ask your library") —
+      designed to be opt-in and bring-your-own-key
+- [ ] Postgres deployment guide
+
+## 🤝 Contributing
+
+Issues and pull requests are welcome. This is an early open-source project —
+if you find it useful, a star helps others discover it.
+
+## 📄 License
+
+[MIT](./LICENSE) — do what you like, no warranty.
