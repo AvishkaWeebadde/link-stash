@@ -131,6 +131,7 @@ function UploadForm() {
     undefined,
   );
   const [fileName, setFileName] = useState<string | null>(null);
+  const [kind, setKind] = useState<"book" | "paper">("book");
 
   return (
     <form action={action} className="flex flex-col gap-3">
@@ -148,10 +149,25 @@ function UploadForm() {
           name="file"
           accept=".pdf,.epub,application/pdf,application/epub+zip"
           required
-          onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            setFileName(f?.name ?? null);
+            // Sensible default: EPUBs are usually books, PDFs usually papers.
+            if (f) setKind(f.name.toLowerCase().endsWith(".epub") ? "book" : "paper");
+          }}
           className="hidden"
         />
       </label>
+
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted">Add as</span>
+        <div className="flex overflow-hidden rounded-lg border border-line">
+          <KindOption current={kind} value="book" label="📖 Book" onSelect={setKind} />
+          <KindOption current={kind} value="paper" label="📄 Paper" onSelect={setKind} />
+        </div>
+        <input type="hidden" name="kind" value={kind} />
+      </div>
+
       {state?.error && (
         <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
       )}
@@ -163,6 +179,31 @@ function UploadForm() {
         {pending ? "Uploading…" : "Import to library"}
       </button>
     </form>
+  );
+}
+
+function KindOption({
+  current,
+  value,
+  label,
+  onSelect,
+}: {
+  current: string;
+  value: "book" | "paper";
+  label: string;
+  onSelect: (v: "book" | "paper") => void;
+}) {
+  const active = current === value;
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(value)}
+      className={`px-3 py-1.5 text-sm transition ${
+        active ? "bg-accent-soft font-medium text-fg" : "text-muted hover:bg-surface-2"
+      }`}
+    >
+      {label}
+    </button>
   );
 }
 

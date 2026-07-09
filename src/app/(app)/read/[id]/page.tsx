@@ -9,7 +9,12 @@ import ItemOrganizer from "@/components/item-organizer";
 import PdfReader from "@/components/pdf-reader";
 import { requireUser } from "@/lib/dal";
 import { getItem, listCollections } from "@/lib/items";
-import { ITEM_TYPE_LABELS, type ItemStatus, type ItemType } from "@/lib/constants";
+import {
+  ITEM_TYPE_LABELS,
+  itemFormat,
+  type ItemStatus,
+  type ItemType,
+} from "@/lib/constants";
 
 export default async function ReaderPage({
   params,
@@ -24,6 +29,7 @@ export default async function ReaderPage({
   const allCollections = await listCollections(userId);
 
   const type = item.type as ItemType;
+  const format = itemFormat(item.filePath);
   const minutes = item.wordCount
     ? Math.max(1, Math.round(item.wordCount / 220))
     : null;
@@ -80,7 +86,7 @@ export default async function ReaderPage({
           </div>
         </div>
 
-        {type === "article" || type === "note" ? (
+        {format === "html" ? (
           item.contentHtml ? (
             <>
               <ArticleReader
@@ -105,7 +111,7 @@ export default async function ReaderPage({
           ) : (
             <p className="text-muted">This item has no readable content.</p>
           )
-        ) : type === "pdf" ? (
+        ) : format === "pdf" ? (
           <>
             <PdfReader
               itemId={item.id}
@@ -120,7 +126,7 @@ export default async function ReaderPage({
               }))}
             />
           </>
-        ) : type === "epub" ? (
+        ) : format === "epub" ? (
           <>
             <EpubReader
               itemId={item.id}

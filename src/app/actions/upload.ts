@@ -31,19 +31,29 @@ export async function uploadFile(
 
   const name = file.name;
   const ext = name.split(".").pop()?.toLowerCase() ?? "";
-  let type = ACCEPTED[file.type];
-  if (!type) {
-    if (ext === "pdf") type = "pdf";
-    else if (ext === "epub") type = "epub";
+  let format = ACCEPTED[file.type];
+  if (!format) {
+    if (ext === "pdf") format = "pdf";
+    else if (ext === "epub") format = "epub";
   }
-  if (!type) {
+  if (!format) {
     return { error: "Only PDF and EPUB files are supported." };
   }
+
+  // The user chooses the kind (book vs paper); default from the format
+  // (EPUBs are usually books, PDFs usually papers) if not provided.
+  const requestedKind = String(formData.get("kind") ?? "");
+  const kind: "book" | "paper" =
+    requestedKind === "book" || requestedKind === "paper"
+      ? requestedKind
+      : format === "epub"
+        ? "book"
+        : "paper";
 
   const title = name.replace(/\.(pdf|epub)$/i, "").trim() || "Untitled";
 
   const item = await db.item.create({
-    data: { userId, type, title, status: "reading" },
+    data: { userId, type: kind, title, status: "reading" },
     select: { id: true },
   });
 

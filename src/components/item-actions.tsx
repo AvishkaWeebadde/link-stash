@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import ConfirmButton from "@/components/confirm-button";
 import { deleteItem, setStatus } from "@/app/actions/items";
 import { ITEM_STATUSES, type ItemStatus } from "@/lib/constants";
 
@@ -35,19 +36,18 @@ export default function ItemActions({
         ))}
       </select>
 
-      <button
+      <ConfirmButton
+        onConfirm={() => start(() => deleteItem(id))}
         disabled={pending}
-        onClick={() => {
-          if (confirm("Delete this item permanently?")) {
-            start(() => deleteItem(id));
-          }
-        }}
-        className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition hover:bg-red-500/10 hover:text-red-600"
-        title="Delete"
-        aria-label="Delete item"
+        title="Delete item?"
+        message="This permanently removes the item, along with its highlights and notes. This can’t be undone."
+        confirmLabel="Delete"
+        triggerTitle="Delete"
+        ariaLabel="Delete item"
+        className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition hover:bg-red-500/10 hover:text-red-600 disabled:opacity-50"
       >
         🗑️
-      </button>
+      </ConfirmButton>
     </div>
   );
 }

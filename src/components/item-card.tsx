@@ -53,7 +53,7 @@ export default function ItemCard({ item }: { item: ItemCardData }) {
           <p className="mt-1.5 line-clamp-2 text-sm text-muted">{item.excerpt}</p>
         )}
 
-        {(type === "epub" || type === "pdf") && item.progress > 0 && (
+        {(type === "book" || type === "paper") && item.progress > 0 && (
           <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-surface-2">
             <div
               className="h-full rounded-full bg-accent"

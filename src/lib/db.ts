@@ -15,7 +15,12 @@ function resolveDbUrl(): string {
   if (url.startsWith("file:")) {
     const p = url.slice("file:".length);
     if (!path.isAbsolute(p)) {
-      return "file:" + path.resolve(process.cwd(), "prisma", p);
+      // Desktop build: anchor relative paths to the app-data folder.
+      // Dev/web: anchor to prisma/ (matches the CLI/Studio convention).
+      const base = process.env.LINKSTASH_DATA_DIR
+        ? process.env.LINKSTASH_DATA_DIR
+        : path.resolve(process.cwd(), "prisma");
+      return "file:" + path.resolve(base, p);
     }
   }
   return url;

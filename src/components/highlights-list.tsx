@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import ConfirmButton from "@/components/confirm-button";
 import { deleteHighlight, updateHighlightNote } from "@/app/actions/highlights";
 import { HIGHLIGHT_COLOR_HEX, type HighlightColor } from "@/lib/constants";
 
@@ -99,21 +100,23 @@ function Row({ highlight }: { highlight: HighlightItem }) {
           )}
         </div>
 
-        <button
+        <ConfirmButton
           disabled={pending}
-          onClick={() => {
-            if (confirm("Delete this highlight?"))
-              start(async () => {
-                await deleteHighlight(highlight.id);
-                router.refresh();
-              });
-          }}
-          className="h-6 shrink-0 text-faint transition hover:text-red-600"
-          aria-label="Delete highlight"
-          title="Delete highlight"
+          onConfirm={() =>
+            start(async () => {
+              await deleteHighlight(highlight.id);
+              router.refresh();
+            })
+          }
+          title="Delete highlight?"
+          message="This removes the highlight and its note."
+          confirmLabel="Delete"
+          triggerTitle="Delete highlight"
+          ariaLabel="Delete highlight"
+          className="h-6 shrink-0 text-faint transition hover:text-red-600 disabled:opacity-50"
         >
           ×
-        </button>
+        </ConfirmButton>
       </div>
     </div>
   );

@@ -5,10 +5,11 @@ books (EPUB) in one place. Read them distraction-free, highlight passages, take
 notes, organize with tags and collections, and search across everything you've
 ever read.
 
-Self-hosted. Open source. Your data stays yours.
+A **local-first desktop app** (Windows/macOS/Linux via Tauri) — no login, fully
+offline, your data in a folder you control. Open source.
 
 > Built as a modern, own-your-data alternative to read-later apps — extended for
-> research and book reading.
+> research and book reading. A multi-user web build shares the same codebase.
 
 ---
 
@@ -71,7 +72,38 @@ npm run dev
 
 Open <http://localhost:3000>, create an account, and start stashing.
 
-## 🐳 Running with Docker
+## 🖥️ Desktop app (Tauri)
+
+LinkStash ships as a native desktop app — **no login, fully offline, your data
+in a local folder**. It bundles the Next.js backend as a Node sidecar that the
+app launches on `127.0.0.1`, with a native window (Tauri + the OS WebView).
+
+**Prerequisites (Windows):** Rust (`rustup`, MSVC toolchain) and the Visual
+Studio C++ Build Tools. Run `npx tauri info` to check.
+
+```bash
+# Develop the desktop app (hot-reloads the Next.js frontend, no login)
+npm run tauri:dev
+
+# Build a standalone installer (NSIS .exe on Windows)
+npm run tauri:build
+# → src-tauri/target/release/bundle/nsis/LinkStash_<version>_x64-setup.exe
+```
+
+The installed app stores everything in the OS app-data folder
+(`%APPDATA%\app.linkstash.desktop` on Windows): a SQLite database seeded from a
+migrated template on first launch, plus your uploaded PDFs/EPUBs. A crash log
+for the backend is written there as `server.log`.
+
+`npm run tauri:build` runs `scripts/build-desktop.mjs`, which produces the
+Next.js standalone server, copies `.next/static` + `public`, bundles the Node
+runtime, and generates the template database — all into `src-tauri/resources/`.
+
+## 🐳 Running the web version with Docker
+
+> The desktop app above is the primary way to use LinkStash. The multi-user web
+> server below is optional and shares the same codebase (`LINKSTASH_MODE`).
+
 
 ```bash
 # Provide a session secret (or put it in a .env file next to the compose file)

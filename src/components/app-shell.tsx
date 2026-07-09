@@ -103,16 +103,16 @@ export default function AppShell({
               badge={counts.typeCounts.article ?? 0}
             />
             <NavItem
-              href="/library?type=pdf"
-              label="PDFs"
-              icon={ITEM_TYPE_ICONS.pdf}
-              badge={counts.typeCounts.pdf ?? 0}
+              href="/library?type=paper"
+              label="Papers"
+              icon={ITEM_TYPE_ICONS.paper}
+              badge={counts.typeCounts.paper ?? 0}
             />
             <NavItem
-              href="/library?type=epub"
+              href="/library?type=book"
               label="Books"
-              icon={ITEM_TYPE_ICONS.epub}
-              badge={counts.typeCounts.epub ?? 0}
+              icon={ITEM_TYPE_ICONS.book}
+              badge={counts.typeCounts.book ?? 0}
             />
             <NavItem
               href="/library?type=note"

@@ -13,6 +13,10 @@ const eslintConfig = defineConfig([
     // Third-party / generated artifacts we don't author.
     "public/**",
     "src/generated/**",
+    // Tauri/Rust build output and staged desktop resources.
+    "src-tauri/target/**",
+    "src-tauri/resources/**",
+    "frontend/**",
   ]),
   {
     rules: {

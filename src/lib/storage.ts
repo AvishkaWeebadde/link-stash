@@ -2,9 +2,11 @@ import "server-only";
 import path from "node:path";
 import fs from "node:fs/promises";
 
-// Uploaded files live under <project root>/uploads/<userId>/<itemId>.<ext>.
-// This directory is gitignored; configure a volume for it when self-hosting.
-const UPLOADS_ROOT = path.join(process.cwd(), "uploads");
+// Uploaded files live under <data dir>/uploads/<userId>/<itemId>.<ext>.
+// In the desktop build LINKSTASH_DATA_DIR points at the OS app-data folder;
+// in dev it falls back to the project root (gitignored /uploads).
+const DATA_DIR = process.env.LINKSTASH_DATA_DIR || process.cwd();
+const UPLOADS_ROOT = path.join(DATA_DIR, "uploads");
 
 export function uploadPathFor(
   userId: string,

@@ -48,3 +48,6 @@ next-env.d.ts
 # Local SQLite database (dev data — not for version control)
 /prisma/*.db
 /prisma/*.db-journal
+
+# Desktop build: staged sidecar resources (generated)
+/src-tauri/resources
