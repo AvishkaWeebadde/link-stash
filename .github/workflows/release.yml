@@ -49,15 +49,30 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate
 
-      - name: Build and release
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Tauri downloads the NSIS toolchain from GitHub's release CDN during
+      # bundling; cache it so it's fetched at most once (the download has been
+      # returning intermittent 504s).
+      - name: Cache Tauri NSIS toolchain
+        uses: actions/cache@v4
         with:
-          # Creates/updates a draft release for the tag and uploads installers.
-          tagName: ${{ github.ref_name }}
-          releaseName: "LinkStash ${{ github.ref_name }}"
-          releaseBody: "Download the installer for your platform below."
-          releaseDraft: true
-          prerelease: false
-          args: ${{ matrix.args }}
+          path: ~\AppData\Local\tauri
+          key: tauri-nsis-${{ runner.os }}
+
+      # Retry the build to ride out flaky NSIS downloads. Rust output is cached,
+      # so retries only redo the (fast) bundling step.
+      - name: Build desktop app
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 25
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: npm run tauri:build
+
+      - name: Publish draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: LinkStash ${{ github.ref_name }}
+          body: "Download the installer below and run it."
+          draft: true
+          files: src-tauri/target/release/bundle/nsis/*-setup.exe
