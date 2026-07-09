@@ -7,6 +7,7 @@ import HighlightsList from "@/components/highlights-list";
 import ItemActions from "@/components/item-actions";
 import ItemOrganizer from "@/components/item-organizer";
 import PdfReader from "@/components/pdf-reader";
+import ReadAloud from "@/components/read-aloud";
 import { requireUser } from "@/lib/dal";
 import { getItem, listCollections } from "@/lib/items";
 import {
@@ -47,6 +48,9 @@ export default async function ReaderPage({
             ←
           </Link>
           <span className="flex-1 truncate text-sm text-muted">{item.title}</span>
+          {format === "html" && item.textContent && (
+            <ReadAloud text={item.textContent} />
+          )}
           <FavoriteButton id={item.id} favorite={item.favorite} className="text-lg" />
           <ItemActions id={item.id} status={item.status as ItemStatus} />
         </div>

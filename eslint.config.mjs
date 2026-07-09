@@ -23,6 +23,9 @@ const eslintConfig = defineConfig([
       // One-time client-side sync of theme/selection state from browser APIs
       // inside effects is intentional here.
       "react-hooks/set-state-in-effect": "off",
+      // Mutating refs (ref.current = …) inside event handlers/callbacks is a
+      // legitimate React pattern; this compiler-oriented rule is too strict.
+      "react-hooks/immutability": "off",
     },
   },
 ]);
