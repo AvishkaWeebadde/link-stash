@@ -3,17 +3,19 @@ import path from "node:path";
 import { PrismaClient } from "@/generated/prisma/client";
 
 /*
-  Normalize a relative SQLite `file:` URL to an absolute path anchored at the
-  project root, so the runtime engine and the Prisma CLI agree on one file.
+  Prisma resolves relative SQLite `file:` URLs against the *schema directory*
+  (prisma/) for the CLI and Studio. The query engine at runtime, however,
+  resolves them against the process CWD (the project root). To make the app,
+  the CLI, and Studio all open the exact same file, we anchor relative `file:`
+  URLs to the prisma/ directory here — matching the CLI/Studio convention.
   Non-file URLs (e.g. Postgres in production) pass through untouched.
-  Keep this in sync with prisma.config.ts.
 */
 function resolveDbUrl(): string {
-  const url = process.env.DATABASE_URL ?? "file:./prisma/dev.db";
+  const url = process.env.DATABASE_URL ?? "file:./dev.db";
   if (url.startsWith("file:")) {
     const p = url.slice("file:".length);
     if (!path.isAbsolute(p)) {
-      return "file:" + path.resolve(process.cwd(), p);
+      return "file:" + path.resolve(process.cwd(), "prisma", p);
     }
   }
   return url;

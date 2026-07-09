@@ -1,25 +1,11 @@
 // Prisma CLI config. See https://pris.ly/prisma-config
+// `dotenv/config` loads .env so env("DATABASE_URL") resolves.
+// The datasource URL is passed through as-is: for SQLite, the CLI and Prisma
+// Studio resolve a relative `file:` path against the prisma/ schema directory.
+// src/lib/db.ts anchors the app runtime to that same directory, so the app,
+// CLI, and Studio all open the identical SQLite file.
 import "dotenv/config";
-import path from "node:path";
-import { defineConfig } from "prisma/config";
-
-/*
-  SQLite `file:` URLs are resolved differently by the Prisma CLI (relative to
-  the schema directory) and the runtime engine (relative to the process CWD).
-  To keep both pointing at the same file, we normalize any relative `file:`
-  URL to an absolute path anchored at the project root. Non-file URLs
-  (e.g. Postgres for production) pass through untouched.
-*/
-function resolveDbUrl(raw: string | undefined): string {
-  const url = raw ?? "file:./prisma/dev.db";
-  if (url.startsWith("file:")) {
-    const p = url.slice("file:".length);
-    if (!path.isAbsolute(p)) {
-      return "file:" + path.resolve(process.cwd(), p);
-    }
-  }
-  return url;
-}
+import { defineConfig, env } from "prisma/config";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -28,6 +14,6 @@ export default defineConfig({
   },
   engine: "classic",
   datasource: {
-    url: resolveDbUrl(process.env.DATABASE_URL),
+    url: env("DATABASE_URL"),
   },
 });
