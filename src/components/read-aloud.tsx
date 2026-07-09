@@ -132,8 +132,17 @@ export default function ReadAloud({ text }: { text: string }) {
       {status === "idle" ? (
         <button
           onClick={play}
-          className={`${btn} text-muted hover:bg-surface-2 hover:text-fg`}
-          title="Read aloud (reads your selection, or the whole item)"
+          disabled={!text.trim()}
+          className={`${btn} font-medium ${
+            text.trim()
+              ? "bg-accent-soft text-accent hover:opacity-80"
+              : "cursor-not-allowed text-faint opacity-50"
+          }`}
+          title={
+            text.trim()
+              ? "Read aloud (reads your selection, or the whole item)"
+              : "No selectable text here (a scanned document can't be read aloud)"
+          }
         >
           🔊 Listen
         </button>

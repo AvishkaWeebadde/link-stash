@@ -32,6 +32,7 @@ export default function ArticleReader({
     locator: Locator;
   } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [fontScale, setFontScale] = useState(1);
 
   // (Re)render clean HTML and paint all highlights whenever inputs change.
   useEffect(() => {
@@ -97,7 +98,33 @@ export default function ArticleReader({
 
   return (
     <div className="relative">
-      <div ref={ref} className="prose" onMouseUp={onMouseUp} />
+      {/* Text-size zoom */}
+      <div className="mb-4 flex items-center justify-end gap-1">
+        <button
+          onClick={() => setFontScale((s) => Math.max(0.8, s - 0.1))}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-sm text-muted transition hover:bg-surface-2 hover:text-fg"
+          title="Smaller text"
+        >
+          A−
+        </button>
+        <span className="w-10 text-center text-xs text-faint">
+          {Math.round(fontScale * 100)}%
+        </span>
+        <button
+          onClick={() => setFontScale((s) => Math.min(1.8, s + 0.1))}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-base text-muted transition hover:bg-surface-2 hover:text-fg"
+          title="Larger text"
+        >
+          A+
+        </button>
+      </div>
+
+      <div
+        ref={ref}
+        className="prose"
+        onMouseUp={onMouseUp}
+        style={{ fontSize: `${(1.19 * fontScale).toFixed(3)}rem` }}
+      />
 
       {popover && (
         <div

@@ -27,7 +27,15 @@ export default function EpubReader({
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pct, setPct] = useState(0);
+  const [fontPct, setFontPct] = useState(100);
   const [sectionText, setSectionText] = useState("");
+
+  // Apply font size to the rendition whenever it changes.
+  useEffect(() => {
+    try {
+      renditionRef.current?.themes?.fontSize(`${fontPct}%`);
+    } catch {}
+  }, [fontPct]);
   const [selection, setSelection] = useState<{ cfi: string; text: string } | null>(
     null,
   );
@@ -153,7 +161,12 @@ export default function EpubReader({
           />
         </div>
         <span className="w-10 text-right text-xs text-muted">{pct}%</span>
-        {sectionText && <ReadAloud text={sectionText} />}
+        <div className="flex items-center gap-1">
+          <ZoomBtn onClick={() => setFontPct((p) => Math.max(70, p - 10))} label="A−" />
+          <span className="w-9 text-center text-xs text-faint">{fontPct}%</span>
+          <ZoomBtn onClick={() => setFontPct((p) => Math.min(200, p + 10))} label="A+" />
+        </div>
+        <ReadAloud text={sectionText} />
       </div>
 
       <div className="relative rounded-xl border border-line bg-surface">
@@ -202,6 +215,17 @@ export default function EpubReader({
         </div>
       )}
     </div>
+  );
+}
+
+function ZoomBtn({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex h-7 w-7 items-center justify-center rounded-lg text-xs text-muted transition hover:bg-surface-2 hover:text-fg"
+    >
+      {label}
+    </button>
   );
 }
 

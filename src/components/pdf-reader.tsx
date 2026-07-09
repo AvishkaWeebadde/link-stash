@@ -22,6 +22,11 @@ export default function PdfReader({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pageText, setPageText] = useState("");
+  const [zoom, setZoom] = useState(1);
+  const zoomRef = useRef(1);
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
 
   // Load the document once.
   useEffect(() => {
@@ -57,7 +62,7 @@ export default function PdfReader({
     const pageObj = await pdf.getPage(n);
     const dpr = window.devicePixelRatio || 1;
     const unscaled = pageObj.getViewport({ scale: 1 });
-    const scale = (container.clientWidth / unscaled.width) * dpr;
+    const scale = (container.clientWidth / unscaled.width) * dpr * zoomRef.current;
     const viewport = pageObj.getViewport({ scale });
 
     canvas.width = viewport.width;
@@ -87,10 +92,10 @@ export default function PdfReader({
     }
   }, []);
 
-  // Render whenever the page changes or the document finishes loading.
+  // Render whenever the page, zoom, or load state changes.
   useEffect(() => {
     if (!loading) renderPage(page);
-  }, [page, loading, renderPage]);
+  }, [page, zoom, loading, renderPage]);
 
   // Re-render on resize (debounced).
   useEffect(() => {
@@ -147,12 +152,12 @@ export default function PdfReader({
           {loading ? "Loading…" : `Page ${page} / ${numPages}`}
         </span>
         <NavBtn onClick={() => go(1)} disabled={page >= numPages} label="›" />
-        {pageText && (
-          <>
-            <span className="h-4 w-px bg-line" />
-            <ReadAloud text={pageText} />
-          </>
-        )}
+        <span className="h-4 w-px bg-line" />
+        <NavBtn onClick={() => setZoom((z) => Math.max(0.5, z - 0.15))} disabled={zoom <= 0.5} label="−" />
+        <span className="text-xs text-faint">{Math.round(zoom * 100)}%</span>
+        <NavBtn onClick={() => setZoom((z) => Math.min(3, z + 0.15))} disabled={zoom >= 3} label="+" />
+        <span className="h-4 w-px bg-line" />
+        <ReadAloud text={pageText} />
       </div>
       <div ref={containerRef} className="flex justify-center">
         <canvas ref={canvasRef} className="rounded-lg shadow-sm" />
