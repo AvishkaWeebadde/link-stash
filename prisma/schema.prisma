@@ -51,6 +51,8 @@ model Item {
   // Plain text used for full-text search + word count.
   textContent String?
   wordCount   Int?
+  // OCR word boxes per page (JSON), for a selectable text layer on scanned PDFs.
+  ocrData String?
 
   coverImage String? // article lead image or book cover
   filePath   String? // relative path under /uploads for pdf/epub

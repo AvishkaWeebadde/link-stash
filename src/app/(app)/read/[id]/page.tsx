@@ -121,6 +121,7 @@ export default async function ReaderPage({
               initialPage={item.locator ? parseInt(item.locator, 10) || 1 : 1}
               fallbackText={item.textContent ?? ""}
               bookmarks={bookmarks}
+              ocrData={item.ocrData}
               highlights={item.highlights.map((h) => ({
                 id: h.id,
                 color: h.color,

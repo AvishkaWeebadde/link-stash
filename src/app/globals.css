@@ -268,3 +268,23 @@ mark[data-hl] {
 .pdf-text-layer ::selection {
   background: color-mix(in srgb, var(--accent) 35%, transparent);
 }
+
+/* Selectable text layer built from OCR word boxes (scanned PDFs). */
+.pdf-ocr-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  line-height: 1;
+}
+.pdf-ocr-layer span {
+  position: absolute;
+  color: transparent;
+  white-space: pre;
+  overflow: hidden;
+  cursor: text;
+  user-select: text;
+  transform-origin: 0 0;
+}
+.pdf-ocr-layer ::selection {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+}

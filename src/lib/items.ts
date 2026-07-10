@@ -99,8 +99,30 @@ export async function getSidebarCounts(userId: string) {
   return { typeCounts, unread, favorite, total };
 }
 
+// Desktop databases predate newer columns (they seed from a template and don't
+// run migrations), so add ocrData on demand. Memoized per process.
+let itemColsReady: Promise<void> | null = null;
+export function ensureItemColumns(): Promise<void> {
+  if (!itemColsReady) {
+    itemColsReady = (async () => {
+      try {
+        const cols = await db.$queryRawUnsafe<{ name: string }[]>(
+          `PRAGMA table_info("Item")`,
+        );
+        if (!cols.some((c) => c.name === "ocrData")) {
+          await db.$executeRawUnsafe(`ALTER TABLE "Item" ADD COLUMN "ocrData" TEXT`);
+        }
+      } catch {
+        /* best effort */
+      }
+    })();
+  }
+  return itemColsReady;
+}
+
 /** Full item for the reader view (owner-scoped). */
 export async function getItem(userId: string, id: string) {
+  await ensureItemColumns();
   return db.item.findFirst({
     where: { id, userId },
     include: {

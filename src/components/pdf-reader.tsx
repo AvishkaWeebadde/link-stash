@@ -19,13 +19,25 @@ export default function PdfReader({
   fallbackText = "",
   bookmarks = [],
   highlights = [],
+  ocrData,
 }: {
   itemId: string;
   initialPage: number;
   fallbackText?: string;
   bookmarks?: BookmarkData[];
   highlights?: RawHighlight[];
+  ocrData?: string | null;
 }) {
+  type OcrWord = { t: string; x: number; y: number; w: number; h: number };
+  const ocrPages: Record<number, OcrWord[]> = (() => {
+    if (!ocrData) return {};
+    try {
+      return JSON.parse(ocrData).pages ?? {};
+    } catch {
+      return {};
+    }
+  })();
+  const hasOcr = Object.keys(ocrPages).length > 0;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -46,6 +58,7 @@ export default function PdfReader({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pageText, setPageText] = useState("");
+  const [pageDims, setPageDims] = useState({ w: 0, h: 0 });
   const [zoom, setZoom] = useState(1);
   const [hlMode, setHlMode] = useState(false);
   const [ocr, setOcr] = useState<{ running: boolean; progress: number; error?: string }>({
@@ -70,6 +83,7 @@ export default function PdfReader({
       const cvs = document.createElement("canvas");
       const ctx = cvs.getContext("2d");
       let full = "";
+      const pages: Record<number, { t: string; x: number; y: number; w: number; h: number }[]> = {};
       const n = pdf.numPages;
       for (let i = 1; i <= n && ctx; i++) {
         const p = await pdf.getPage(i);
@@ -77,12 +91,27 @@ export default function PdfReader({
         cvs.width = vp.width;
         cvs.height = vp.height;
         await p.render({ canvasContext: ctx, viewport: vp }).promise;
-        const { data } = await worker.recognize(cvs);
-        full += data.text + "\n";
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data } = (await worker.recognize(cvs, {}, { blocks: true } as any)) as any;
+        full += (data.text ?? "") + "\n";
+        // Collect word boxes, normalized to the page (0..1), for the text layer.
+        const words: { t: string; x: number; y: number; w: number; h: number }[] = [];
+        for (const b of data.blocks ?? []) for (const par of b.paragraphs ?? []) for (const ln of par.lines ?? []) for (const w of ln.words ?? []) {
+          const bb = w.bbox;
+          if (!bb || !w.text?.trim()) continue;
+          words.push({
+            t: w.text,
+            x: bb.x0 / cvs.width,
+            y: bb.y0 / cvs.height,
+            w: (bb.x1 - bb.x0) / cvs.width,
+            h: (bb.y1 - bb.y0) / cvs.height,
+          });
+        }
+        pages[i] = words;
         setOcr({ running: true, progress: Math.round((i / n) * 100) });
       }
       await worker.terminate();
-      await saveOcrText(itemId, full);
+      await saveOcrText(itemId, full, JSON.stringify({ pages }));
       setOcr({ running: false, progress: 100 });
       router.refresh();
     } catch (e) {
@@ -159,6 +188,7 @@ export default function PdfReader({
       stageRef.current.style.width = `${cssViewport.width}px`;
       stageRef.current.style.height = `${cssViewport.height}px`;
     }
+    setPageDims({ w: cssViewport.width, h: cssViewport.height });
 
     renderTaskRef.current?.cancel();
     const ctx = canvas.getContext("2d");
@@ -171,10 +201,13 @@ export default function PdfReader({
       /* cancelled render */
     }
 
-    // Overlay a selectable text layer aligned to the canvas.
+    // Overlay a selectable text layer aligned to the canvas. Scanned PDFs use
+    // the OCR layer instead (rendered from ocrPages), so skip pdf.js there.
     const textDiv = textLayerRef.current;
     const pdfjs = pdfjsRef.current;
-    if (textDiv && pdfjs?.TextLayer) {
+    if (textDiv && hasOcr) {
+      textDiv.innerHTML = "";
+    } else if (textDiv && pdfjs?.TextLayer) {
       textDiv.innerHTML = "";
       textDiv.style.setProperty("--total-scale-factor", String(cssScale));
       try {
@@ -197,7 +230,7 @@ export default function PdfReader({
     } catch {
       setPageText("");
     }
-  }, []);
+  }, [hasOcr]);
 
   // Render whenever the page, zoom, or load state changes.
   useEffect(() => {
@@ -323,12 +356,12 @@ export default function PdfReader({
           ✏️ Highlight
         </button>
         <ReadAloud text={pageText || fallbackText} />
-        {!fallbackText.trim() && (
+        {!hasOcr && !pageText.trim() && (
           <button
             onClick={runOcr}
             disabled={ocr.running}
             className="flex h-8 items-center rounded-lg px-2.5 text-sm text-muted transition hover:bg-surface-2 hover:text-fg disabled:opacity-60"
-            title="Recognize text (OCR) so this scanned PDF becomes searchable and readable"
+            title="Recognize text (OCR) so this scanned PDF becomes selectable, searchable, and readable"
           >
             {ocr.running ? `🔤 OCR ${ocr.progress}%` : "🔤 OCR"}
           </button>
@@ -350,6 +383,24 @@ export default function PdfReader({
             className="pdf-text-layer"
             onMouseUp={onTextMouseUp}
           />
+          {hasOcr && (
+            <div className="pdf-ocr-layer" onMouseUp={onTextMouseUp}>
+              {(ocrPages[page] ?? []).map((w, i) => (
+                <span
+                  key={i}
+                  style={{
+                    left: w.x * pageDims.w,
+                    top: w.y * pageDims.h,
+                    width: w.w * pageDims.w,
+                    height: w.h * pageDims.h,
+                    fontSize: `${Math.max(6, w.h * pageDims.h * 0.85)}px`,
+                  }}
+                >
+                  {w.t}
+                </span>
+              ))}
+            </div>
+          )}
           <PdfAnnotations
             itemId={itemId}
             page={page}

@@ -74,6 +74,10 @@ async function run() {
     await cp(R("src", "generated", "prisma"), engineDir, { recursive: true });
   }
 
+  // 4b. Prune bundle weight we don't ship.
+  log("Pruning unused bundle weight…");
+  await prune(SERVER);
+
   // 5. Bundle the Node runtime that will execute server.js.
   log(`Bundling Node runtime from ${process.execPath}`);
   await copyFile(process.execPath, path.join(RES, "node.exe"));
@@ -91,6 +95,70 @@ async function run() {
   await rm(tmpDb, { force: true });
 
   log("Done. Resources ready in src-tauri/resources/");
+}
+
+// Delete files we bundle but never use, to shrink the installer.
+async function prune(server) {
+  const { readdir, stat } = await import("node:fs/promises");
+
+  // We use SQLite via the native query engine, so Prisma's bundled WASM
+  // engines/compilers for other databases (and even sqlite's wasm) are dead
+  // weight. Drop every query_(engine|compiler)_bg.*.wasm* file.
+  const prismaJunk =
+    /query_(engine|compiler)_bg\.[a-z]+\.wasm(-base64)?\.(m?js)$|query_(engine|compiler)_bg\.[a-z]+\.wasm$/;
+
+  let freed = 0;
+  // sharp (image lib) is only used by the icon script, never by the server;
+  // prune its dirs wherever nested.
+  const dropDir = (name) => name === "@img" || name === "sharp";
+
+  async function walk(dir) {
+    let entries;
+    try {
+      entries = await readdir(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of entries) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) {
+        if (dropDir(e.name)) {
+          await rm(full, { recursive: true, force: true });
+          continue;
+        }
+        await walk(full);
+      } else if (prismaJunk.test(e.name)) {
+        try {
+          freed += (await stat(full)).size;
+          await rm(full, { force: true });
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  }
+
+  await walk(server);
+
+  // Keep only the Tesseract core the browser actually loads (+ worker + data).
+  const tess = path.join(server, "public", "tesseract");
+  const keep = new Set([
+    "worker.min.js",
+    "tesseract-core-simd-lstm.wasm",
+    "tesseract-core-simd-lstm.wasm.js",
+    "tesseract-core-lstm.wasm",
+    "tesseract-core-lstm.wasm.js",
+    "eng.traineddata.gz",
+  ]);
+  try {
+    for (const f of await readdir(tess)) {
+      if (!keep.has(f)) await rm(path.join(tess, f), { recursive: true, force: true });
+    }
+  } catch {
+    /* no tesseract dir */
+  }
+
+  log(`Pruned ~${(freed / 1048576).toFixed(0)} MB of Prisma WASM engines`);
 }
 
 run().catch((err) => {
