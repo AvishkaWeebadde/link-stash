@@ -24,6 +24,7 @@ model User {
   tags        Tag[]
   collections Collection[]
   highlights  Highlight[]
+  notes       Note[]
 }
 
 model Item {
@@ -64,6 +65,7 @@ model Item {
   tags        Tag[]        @relation("ItemTags")
   collections Collection[] @relation("ItemCollections")
   highlights  Highlight[]
+  notes       Note[]
 
   @@index([userId, status])
   @@index([userId, type])
@@ -116,4 +118,23 @@ model Highlight {
 
   @@index([userId, createdAt])
   @@index([itemId])
+}
+
+// A free-form note attached to an item as a whole (e.g. a summary or a thought
+// about a passage) — distinct from a highlight's inline note. This is separate
+// from a standalone "note"-type Item.
+model Note {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId String
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  body String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([itemId])
+  @@index([userId, createdAt])
 }

@@ -5,9 +5,11 @@ import EpubReader from "@/components/epub-reader";
 import FavoriteButton from "@/components/favorite-button";
 import HighlightsList from "@/components/highlights-list";
 import ItemActions from "@/components/item-actions";
+import ItemNotes from "@/components/item-notes";
 import ItemOrganizer from "@/components/item-organizer";
 import PdfReader from "@/components/pdf-reader";
 import ReadAloud from "@/components/read-aloud";
+import { listItemNotes } from "@/lib/notes";
 import { requireUser } from "@/lib/dal";
 import { getItem, listCollections } from "@/lib/items";
 import {
@@ -28,6 +30,7 @@ export default async function ReaderPage({
   if (!item) notFound();
 
   const allCollections = await listCollections(userId);
+  const notes = await listItemNotes(userId, item.id);
 
   const type = item.type as ItemType;
   const format = itemFormat(item.filePath);
@@ -157,6 +160,15 @@ export default async function ReaderPage({
             Unsupported item type.
           </div>
         )}
+
+        <ItemNotes
+          itemId={item.id}
+          notes={notes.map((n) => ({
+            id: n.id,
+            body: n.body,
+            createdAt: n.createdAt,
+          }))}
+        />
       </article>
     </div>
   );

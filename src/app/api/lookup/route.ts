@@ -58,14 +58,20 @@ async function fetchDefinition(
 async function fetchWiki(
   term: string,
 ): Promise<{ title: string; extract: string; url: string } | null> {
-  // Resolve the best-matching title, then fetch its summary.
+  // Full-text page search finds the most relevant article even without an
+  // exact title match (e.g. "churn prediction" -> "Customer attrition").
   const search = (await getJson(
-    `https://en.wikipedia.org/w/rest.php/v1/search/title?q=${encodeURIComponent(
+    `https://en.wikipedia.org/w/rest.php/v1/search/page?q=${encodeURIComponent(
       term,
     )}&limit=1`,
-  )) as { pages?: { title?: string; key?: string }[] } | null;
+  )) as {
+    pages?: { title?: string; key?: string; excerpt?: string }[];
+  } | null;
 
-  const title = search?.pages?.[0]?.key ?? search?.pages?.[0]?.title ?? term;
+  const page = search?.pages?.[0];
+  const title = page?.key ?? page?.title;
+  if (!title) return null;
+
   const summary = (await getJson(
     `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(
       title,
@@ -77,14 +83,23 @@ async function fetchWiki(
     content_urls?: { desktop?: { page?: string } };
   } | null;
 
-  if (!summary?.extract || summary.type === "disambiguation") return null;
-  return {
-    title: summary.title ?? title,
-    extract: summary.extract,
-    url:
-      summary.content_urls?.desktop?.page ??
-      `https://en.wikipedia.org/wiki/${encodeURIComponent(title)}`,
-  };
+  const url = (t: string) =>
+    `https://en.wikipedia.org/wiki/${encodeURIComponent(t.replace(/ /g, "_"))}`;
+
+  if (summary?.extract && summary.type !== "disambiguation") {
+    return {
+      title: summary.title ?? page?.title ?? title,
+      extract: summary.extract,
+      url: summary.content_urls?.desktop?.page ?? url(title),
+    };
+  }
+
+  // Fall back to the search excerpt (strip its <span> match markup).
+  if (page?.excerpt) {
+    const text = page.excerpt.replace(/<[^>]+>/g, "").trim();
+    if (text) return { title: page.title ?? title, extract: text, url: url(title) };
+  }
+  return null;
 }
 
 export async function GET(request: NextRequest) {
