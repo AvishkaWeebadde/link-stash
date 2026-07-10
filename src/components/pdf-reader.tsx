@@ -379,8 +379,8 @@ export default function PdfReader({
           formatLabel={(l) => `Page ${l}`}
         />
       </div>
-      <div ref={containerRef} className="flex justify-center">
-        <div ref={stageRef} className="relative">
+      <div ref={containerRef} className="max-h-[85vh] overflow-auto">
+        <div ref={stageRef} className="relative mx-auto">
           <canvas ref={canvasRef} className="block rounded-lg shadow-sm" />
           <div
             ref={textLayerRef}

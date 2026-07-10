@@ -48,14 +48,19 @@ export default function PdfAnnotations({
   const [flashId, setFlashId] = useState<string | null>(null);
   const [, start] = useTransition();
 
-  // Flash a highlight when the panel jumps to it.
+  // Flash + scroll to a highlight when the panel jumps to it. The delay lets
+  // the target page render first (if the jump changed pages).
   useEffect(() => {
     const onGoto = (e: Event) => {
       const id = (e as CustomEvent).detail?.id;
       if (!id) return;
       setFlashId(id);
-      const t = setTimeout(() => setFlashId(null), 1600);
-      return () => clearTimeout(t);
+      setTimeout(() => {
+        document
+          .getElementById(`pdfhl-${id}`)
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 350);
+      setTimeout(() => setFlashId(null), 2000);
     };
     window.addEventListener("linkstash:goto", onGoto);
     return () => window.removeEventListener("linkstash:goto", onGoto);
@@ -130,6 +135,7 @@ export default function PdfAnnotations({
       {highlights.map((h) => (
         <div
           key={h.id}
+          id={`pdfhl-${h.id}`}
           className="absolute cursor-pointer rounded-sm"
           style={{
             left: pct(h.rect.x),
