@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { updateProgress } from "@/app/actions/items";
 import ReadAloud from "@/components/read-aloud";
+import LookupPanel from "@/components/lookup-panel";
 
 export default function PdfReader({
   itemId,
@@ -15,9 +16,15 @@ export default function PdfReader({
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const textLayerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pdfRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pdfjsRef = useRef<any>(null);
   const renderTaskRef = useRef<{ cancel: () => void } | null>(null);
+  const [lookupTerm, setLookupTerm] = useState<string | null>(null);
+  const [selPopover, setSelPopover] = useState<{ x: number; y: number; text: string } | null>(null);
 
   const [page, setPage] = useState(Math.max(1, initialPage));
   const [numPages, setNumPages] = useState(0);
@@ -37,6 +44,7 @@ export default function PdfReader({
       try {
         const pdfjs = await import("pdfjs-dist");
         pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+        pdfjsRef.current = pdfjs;
         const task = pdfjs.getDocument({ url: `/files/${itemId}` });
         const pdf = await task.promise;
         if (cancelled) return;
@@ -64,13 +72,18 @@ export default function PdfReader({
     const pageObj = await pdf.getPage(n);
     const dpr = window.devicePixelRatio || 1;
     const unscaled = pageObj.getViewport({ scale: 1 });
-    const scale = (container.clientWidth / unscaled.width) * dpr * zoomRef.current;
-    const viewport = pageObj.getViewport({ scale });
+    const cssScale = (container.clientWidth / unscaled.width) * zoomRef.current;
+    const viewport = pageObj.getViewport({ scale: cssScale * dpr });
+    const cssViewport = pageObj.getViewport({ scale: cssScale });
 
     canvas.width = viewport.width;
     canvas.height = viewport.height;
-    canvas.style.width = `${viewport.width / dpr}px`;
-    canvas.style.height = `${viewport.height / dpr}px`;
+    canvas.style.width = `${cssViewport.width}px`;
+    canvas.style.height = `${cssViewport.height}px`;
+    if (stageRef.current) {
+      stageRef.current.style.width = `${cssViewport.width}px`;
+      stageRef.current.style.height = `${cssViewport.height}px`;
+    }
 
     renderTaskRef.current?.cancel();
     const ctx = canvas.getContext("2d");
@@ -81,6 +94,23 @@ export default function PdfReader({
       await task.promise;
     } catch {
       /* cancelled render */
+    }
+
+    // Overlay a selectable text layer aligned to the canvas.
+    const textDiv = textLayerRef.current;
+    const pdfjs = pdfjsRef.current;
+    if (textDiv && pdfjs?.TextLayer) {
+      textDiv.innerHTML = "";
+      textDiv.style.setProperty("--total-scale-factor", String(cssScale));
+      try {
+        await new pdfjs.TextLayer({
+          textContentSource: pageObj.streamTextContent(),
+          container: textDiv,
+          viewport: cssViewport,
+        }).render();
+      } catch {
+        /* text layer is best-effort */
+      }
     }
 
     // Extract the page's text so Read aloud can speak it.
@@ -138,6 +168,17 @@ export default function PdfReader({
     return () => window.removeEventListener("keydown", onKey);
   }, [go]);
 
+  function onTextMouseUp() {
+    const sel = window.getSelection();
+    const text = sel?.toString().trim() ?? "";
+    if (!text || !sel || sel.rangeCount === 0) {
+      setSelPopover(null);
+      return;
+    }
+    const rect = sel.getRangeAt(0).getBoundingClientRect();
+    setSelPopover({ x: rect.left + rect.width / 2, y: rect.top, text });
+  }
+
   if (error) {
     return (
       <div className="rounded-xl border border-dashed border-line p-8 text-center text-muted">
@@ -162,8 +203,36 @@ export default function PdfReader({
         <ReadAloud text={pageText || fallbackText} />
       </div>
       <div ref={containerRef} className="flex justify-center">
-        <canvas ref={canvasRef} className="rounded-lg shadow-sm" />
+        <div ref={stageRef} className="relative">
+          <canvas ref={canvasRef} className="block rounded-lg shadow-sm" />
+          <div
+            ref={textLayerRef}
+            className="pdf-text-layer"
+            onMouseUp={onTextMouseUp}
+          />
+        </div>
       </div>
+
+      {selPopover && (
+        <div
+          className="fixed z-50 flex -translate-x-1/2 -translate-y-full items-center gap-1 rounded-full border border-line bg-surface px-2 py-1.5 shadow-lg"
+          style={{ left: selPopover.x, top: selPopover.y - 8 }}
+        >
+          <button
+            onClick={() => {
+              setLookupTerm(selPopover.text);
+              window.getSelection()?.removeAllRanges();
+              setSelPopover(null);
+            }}
+            className="flex h-7 items-center gap-1 rounded-full px-2 text-sm hover:bg-surface-2"
+            title="Look up"
+          >
+            🔍 Look up
+          </button>
+        </div>
+      )}
+
+      <LookupPanel term={lookupTerm} onClose={() => setLookupTerm(null)} />
     </div>
   );
 }

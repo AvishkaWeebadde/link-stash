@@ -206,3 +206,50 @@ mark[data-hl] {
   cursor: pointer;
   color: inherit;
 }
+
+/*
+  PDF selectable text layer — an invisible, positioned copy of the page's text
+  overlaid on the canvas so users can select, copy, and look up. Mirrors the
+  essential rules from pdf.js's pdf_viewer.css. Span positions and the per-span
+  --font-height / --scale-x / --rotate are set by pdf.js TextLayer.render();
+  we set --total-scale-factor on the container.
+*/
+.pdf-text-layer {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  opacity: 1;
+  line-height: 1;
+  text-align: initial;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  z-index: 1;
+  --min-font-size: 1;
+  --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+  --min-font-size-inv: calc(1 / var(--min-font-size));
+}
+.pdf-text-layer :is(span, br) {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+  user-select: text;
+}
+.pdf-text-layer > :not(.markedContent),
+.pdf-text-layer .markedContent span:not(.markedContent) {
+  z-index: 1;
+  --font-height: 0;
+  font-size: calc(var(--text-scale-factor) * var(--font-height));
+  --scale-x: 1;
+  --rotate: 0deg;
+  transform: rotate(var(--rotate)) scaleX(var(--scale-x))
+    scale(var(--min-font-size-inv));
+}
+.pdf-text-layer .markedContent {
+  display: contents;
+}
+.pdf-text-layer ::selection {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+}
