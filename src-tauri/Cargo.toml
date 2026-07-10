@@ -1,6 +1,6 @@
 [package]
 name = "linkstash"
-version = "0.2.0"
+version = "0.3.0"
 description = "LinkStash — your personal knowledge library"
 authors = ["LinkStash contributors"]
 license = "MIT"

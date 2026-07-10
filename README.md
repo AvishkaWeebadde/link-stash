@@ -31,18 +31,26 @@ release. Prefer to build it yourself? See [Desktop app](#️-desktop-app-tauri).
   - 📄 **Papers** & 📖 **Books** — import PDFs or EPUBs and choose how to file
     them. In-app reader with page/location tracking and resume-where-you-left-off.
   - 📝 **Notes** — jot standalone notes that live alongside your sources.
-- **Read beautifully** — a calm, paper-like reader with light/dark themes and a
-  serif reading typeface.
-- **Highlight & annotate** — select text to highlight (five colors), attach
-  notes, and review all highlights per item.
-- **Organize** — tag items, group them into collections, and mark
-  unread / reading / archived. Star your favorites.
-- **Search everything** — full-text search across titles, content, and more,
-  powered by SQLite FTS5 with relevance ranking.
-- **Multi-user** — real accounts with secure sessions; each person's library is
-  private to them.
-- **Self-hostable** — SQLite by default (zero setup), a Docker image for
-  one-command deployment, and a clean path to Postgres for scale.
+- **Read beautifully** — a calm, paper-like reader with light/dark themes, a
+  serif reading typeface, and text/page **zoom** (with pan on zoomed PDFs).
+- **Annotate, two ways** — highlight passages (text or drag-a-box on any PDF,
+  even scanned), attach notes, and jot whole-item notes. Everything lives in one
+  **Annotations panel**: click a highlight to jump to it in the document, or
+  click a highlight in the document to focus its note.
+- **Read aloud** 🔊 — text-to-speech for a selection, the current page/section,
+  or the whole item, using the OS voices (no keys, offline).
+- **Look up** 🔍 — select text for a dictionary definition + a Wikipedia summary
+  (both keyless), or search the web.
+- **OCR for scanned PDFs** 🔤 — recognize text on image-only PDFs so they become
+  searchable, read-aloud-able, **and selectable** — runs offline.
+- **Bookmarks** — save a spot (page / EPUB location) with an optional note and
+  jump back.
+- **Organize** — tag items, group them into collections, mark
+  unread / reading / archived, and star favorites.
+- **Search everything** — full-text search across titles and content (including
+  OCR'd text), powered by SQLite FTS5 with relevance ranking.
+- **Local-first desktop app** — no login, fully offline; your data lives in a
+  folder you control. A multi-user web build shares the same codebase.
 
 ## 🛠️ Tech stack
 
@@ -56,6 +64,9 @@ release. Prefer to build it yourself? See [Desktop app](#️-desktop-app-tauri).
 | Auth             | Custom sessions — `jose` (JWT) + `bcrypt`, no vendor lock-in |
 | Article extract  | `@mozilla/readability` + `jsdom` + `DOMPurify`     |
 | PDF / EPUB       | `pdfjs-dist` / `epub.js`                           |
+| OCR              | `tesseract.js` (offline, bundled English model)    |
+| Read aloud       | Web Speech API (`speechSynthesis`)                 |
+| Desktop shell    | [Tauri 2](https://tauri.app) (Rust) + Node sidecar |
 
 Everything runs locally with no third-party services required.
 
@@ -157,23 +168,28 @@ prisma/
 
 ## 🗺️ Roadmap
 
-Planned next:
+Shipped:
 
-- [ ] **Bookmarks** — save a spot in a document to jump back to.
-- [ ] **Section notes** — attach a note to a selected passage (beyond highlights).
-- [ ] **Read aloud** — a voice assistant that reads the selection or whole item
-      (text-to-speech), with play/pause and follow-along.
-- [ ] **Look up & explore** — select text to get a definition and related results
-      from the web.
-- [ ] Inline text-layer highlighting for PDFs (currently: reading + progress).
+- [x] Read aloud (selection / page / whole item)
+- [x] Look up & explore (dictionary + Wikipedia + web search)
+- [x] Highlights + notes, unified with two-way jump-to navigation
+- [x] Bookmarks
+- [x] PDF area highlighting + text selection
+- [x] OCR for scanned PDFs (offline) — searchable, read-aloud-able, selectable
+- [x] Text/page zoom with pan
+- [x] Published-installer release pipeline (tag → GitHub Release)
 
-Later:
+Next:
 
-- [ ] Import/export (OPML, Pocket, browser bookmarks).
-- [ ] Browser extension for one-click saving.
-- [ ] Auto-update + code-signed installers; macOS/Linux release builds.
-- [ ] Optional AI features (auto-tagging, summaries, "ask your library") —
-      opt-in, bring-your-own-key.
+- [ ] **Code-signed installers** + Windows SmartScreen-clean install
+- [ ] **macOS & Linux** release builds
+- [ ] **Auto-update**
+- [ ] Higher-accuracy OCR option; OCR quality/polish
+- [ ] Import (Pocket, browser bookmarks, OPML) and export
+- [ ] Browser extension for one-click saving
+- [ ] Optional AI (auto-tag, summaries, "ask your library") — opt-in, BYO-key
+
+Toward **v1.0**: code-signing + cross-platform builds + a polish pass.
 
 ## 🤝 Contributing
 
