@@ -6,17 +6,22 @@ import ReadAloud from "@/components/read-aloud";
 import LookupPanel from "@/components/lookup-panel";
 import NoteComposer from "@/components/note-composer";
 import BookmarksBar, { type BookmarkData } from "@/components/bookmarks-bar";
+import PdfAnnotations, { type PdfHighlight } from "@/components/pdf-annotations";
+
+type RawHighlight = { id: string; color: string; locator: string | null; note: string | null };
 
 export default function PdfReader({
   itemId,
   initialPage,
   fallbackText = "",
   bookmarks = [],
+  highlights = [],
 }: {
   itemId: string;
   initialPage: number;
   fallbackText?: string;
   bookmarks?: BookmarkData[];
+  highlights?: RawHighlight[];
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -37,7 +42,23 @@ export default function PdfReader({
   const [error, setError] = useState<string | null>(null);
   const [pageText, setPageText] = useState("");
   const [zoom, setZoom] = useState(1);
+  const [hlMode, setHlMode] = useState(false);
   const zoomRef = useRef(1);
+
+  // Area highlights for the current page (locator = {page, rect}).
+  const pageHighlights: PdfHighlight[] = highlights
+    .map((h) => {
+      try {
+        const loc = h.locator ? JSON.parse(h.locator) : null;
+        if (loc && loc.page === page && loc.rect) {
+          return { id: h.id, color: h.color, rect: loc.rect, note: h.note };
+        }
+      } catch {
+        /* not an area highlight */
+      }
+      return null;
+    })
+    .filter((h): h is PdfHighlight => h !== null);
   useEffect(() => {
     zoomRef.current = zoom;
   }, [zoom]);
@@ -205,6 +226,17 @@ export default function PdfReader({
         <span className="text-xs text-faint">{Math.round(zoom * 100)}%</span>
         <NavBtn onClick={() => setZoom((z) => Math.min(3, z + 0.15))} disabled={zoom >= 3} label="+" />
         <span className="h-4 w-px bg-line" />
+        <button
+          onClick={() => setHlMode((m) => !m)}
+          className={`flex h-8 items-center rounded-lg px-2.5 text-sm transition ${
+            hlMode
+              ? "bg-accent-soft font-medium text-accent"
+              : "text-muted hover:bg-surface-2 hover:text-fg"
+          }`}
+          title="Highlight mode — drag a box on the page"
+        >
+          ✏️ Highlight
+        </button>
         <ReadAloud text={pageText || fallbackText} />
         <span className="h-4 w-px bg-line" />
         <BookmarksBar
@@ -222,6 +254,12 @@ export default function PdfReader({
             ref={textLayerRef}
             className="pdf-text-layer"
             onMouseUp={onTextMouseUp}
+          />
+          <PdfAnnotations
+            itemId={itemId}
+            page={page}
+            highlights={pageHighlights}
+            active={hlMode}
           />
         </div>
       </div>
