@@ -25,6 +25,11 @@ jobs:
     # `prisma generate` and the build work on CI (there is no committed .env).
     env:
       DATABASE_URL: "file:./prisma/dev.db"
+      # Used by `tauri build` to sign the updater artifacts. Add these repo
+      # secrets before releasing (see docs/RELEASING.md); without the private
+      # key the signed-updater build fails.
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
     steps:
       - uses: actions/checkout@v4
@@ -68,6 +73,32 @@ jobs:
           retry_wait_seconds: 30
           command: npm run tauri:build
 
+      # Build the update manifest the app polls. `latest.json` points existing
+      # installs at the new signed installer (for NSIS the updater downloads the
+      # -setup.exe itself); the endpoint in tauri.conf.json is the "latest
+      # release" download URL, so this must ship with every release.
+      - name: Generate updater manifest (latest.json)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $dir = "src-tauri/target/release/bundle/nsis"
+          $exe = Get-ChildItem "$dir/*-setup.exe" | Select-Object -First 1
+          if (-not $exe) { throw "No installer (*-setup.exe) found" }
+          if (-not (Test-Path "$($exe.FullName).sig")) { throw "No signature (.sig) found — is TAURI_SIGNING_PRIVATE_KEY set?" }
+          $sig = (Get-Content "$($exe.FullName).sig" -Raw).Trim()
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          $url = "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/$($exe.Name)"
+          $manifest = [ordered]@{
+            version   = $version
+            notes     = "See the release page for what's new."
+            pub_date  = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+            platforms = [ordered]@{
+              "windows-x86_64" = [ordered]@{ signature = $sig; url = $url }
+            }
+          }
+          $manifest | ConvertTo-Json -Depth 5 | Out-File "$dir/latest.json" -Encoding utf8
+          Get-Content "$dir/latest.json"
+
       - name: Upload installer as a workflow artifact
         uses: actions/upload-artifact@v4
         with:
@@ -79,6 +110,9 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: LinkStash ${{ github.ref_name }}
-          body: "Download the installer below and run it."
+          body: "Download the installer below and run it. Existing installs update themselves automatically."
           draft: false
-          files: src-tauri/target/release/bundle/nsis/*-setup.exe
+          files: |
+            src-tauri/target/release/bundle/nsis/*-setup.exe
+            src-tauri/target/release/bundle/nsis/*-setup.exe.sig
+            src-tauri/target/release/bundle/nsis/latest.json

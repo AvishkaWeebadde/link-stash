@@ -25,3 +25,7 @@ tauri = { version = "2.11.3", features = [] }
 tauri-plugin-log = "2"
 # Open external links in the user's default browser.
 open = "5"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+# Check GitHub Releases for a newer version and self-update (desktop only).
+tauri-plugin-updater = "2"

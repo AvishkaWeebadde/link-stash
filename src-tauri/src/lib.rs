@@ -136,6 +136,29 @@ fn start_server(app: &tauri::App, port: u16) -> Result<(), Box<dyn std::error::E
     Ok(())
 }
 
+/// A few seconds after launch, ask GitHub Releases whether a newer version
+/// exists. If so, download and install it silently, then relaunch into the new
+/// version. Any failure (offline, no release yet, bad signature) is ignored so
+/// it never blocks normal use.
+#[cfg(all(desktop, not(debug_assertions)))]
+fn spawn_update_check(handle: tauri::AppHandle) {
+    use tauri_plugin_updater::UpdaterExt;
+    std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_secs(5));
+        let installed = tauri::async_runtime::block_on(async {
+            let update = handle.updater()?.check().await?;
+            if let Some(update) = update {
+                update.download_and_install(|_, _| {}, || {}).await?;
+                return Ok::<bool, tauri_plugin_updater::Error>(true);
+            }
+            Ok(false)
+        });
+        if matches!(installed, Ok(true)) {
+            handle.restart();
+        }
+    });
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -148,6 +171,10 @@ pub fn run() {
                         .build(),
                 )?;
             }
+
+            #[cfg(desktop)]
+            app.handle()
+                .plugin(tauri_plugin_updater::Builder::new().build())?;
 
             // Dev loads the running dev server directly; release shows a splash
             // and is redirected to the bundled server once it's ready.
@@ -194,6 +221,8 @@ pub fn run() {
                         }
                     });
                 });
+
+                spawn_update_check(app.handle().clone());
             }
 
             Ok(())

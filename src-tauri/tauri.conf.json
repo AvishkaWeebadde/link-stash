@@ -15,8 +15,17 @@
       "csp": null
     }
   },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDI2MUM0MURFNjk3QUMwOUQKUldTZHdIcHAza0VjSnUrSjFDNGVkaG5DWGFYeFBZa1FSL2NoVGZ4N3Mxdi9seWI5akI2VUxoU3QK",
+      "endpoints": [
+        "https://github.com/AvishkaWeebadde/link-stash/releases/latest/download/latest.json"
+      ]
+    }
+  },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": ["nsis"],
     "resources": {
       "resources/server": "server",
