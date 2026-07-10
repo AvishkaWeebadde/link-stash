@@ -1,6 +1,11 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import {
+  HIGHLIGHT_COLORS,
+  HIGHLIGHT_COLOR_HEX,
+  type HighlightColor,
+} from "@/lib/constants";
 
 /**
  * Compose a note for a selected passage. What "save" does is up to the caller
@@ -13,14 +18,16 @@ export default function NoteComposer({
   onClose,
 }: {
   quote: string | null;
-  onSave: (comment: string) => Promise<void>;
+  onSave: (comment: string, color: HighlightColor) => Promise<void>;
   onClose: () => void;
 }) {
   const [comment, setComment] = useState("");
+  const [color, setColor] = useState<HighlightColor>("yellow");
   const [pending, start] = useTransition();
 
   useEffect(() => {
     setComment("");
+    setColor("yellow");
   }, [quote]);
 
   useEffect(() => {
@@ -36,7 +43,7 @@ export default function NoteComposer({
 
   function save() {
     start(async () => {
-      await onSave(comment.trim());
+      await onSave(comment.trim(), color);
       onClose();
     });
   }
@@ -65,7 +72,20 @@ export default function NoteComposer({
             if ((e.metaKey || e.ctrlKey) && e.key === "Enter") save();
           }}
         />
-        <div className="mt-3 flex justify-end gap-2">
+        <div className="mt-3 flex items-center gap-2">
+          <span className="text-xs text-muted">Color</span>
+          {HIGHLIGHT_COLORS.map((c) => (
+            <button
+              key={c}
+              onClick={() => setColor(c)}
+              title={c}
+              className={`h-6 w-6 rounded-full border transition hover:scale-110 ${
+                color === c ? "border-fg ring-2 ring-ring/40" : "border-line"
+              }`}
+              style={{ background: HIGHLIGHT_COLOR_HEX[c] }}
+            />
+          ))}
+          <span className="flex-1" />
           <button
             onClick={onClose}
             className="rounded-lg px-3 py-2 text-sm text-muted hover:bg-surface-2"

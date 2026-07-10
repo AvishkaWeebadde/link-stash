@@ -1,12 +1,27 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function SearchBox() {
   const router = useRouter();
   const params = useSearchParams();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState(params.get("search") ?? "");
+
+  // Press "/" anywhere (outside a field) to focus search.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable))
+        return;
+      e.preventDefault();
+      inputRef.current?.focus();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   // Debounced navigation to /library?search=…
   useEffect(() => {
@@ -28,9 +43,10 @@ export default function SearchBox() {
         🔍
       </span>
       <input
+        ref={inputRef}
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="Search your library…"
+        placeholder="Search your library…   /"
         className="w-full rounded-lg border border-line bg-surface py-2 pl-9 pr-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
       />
     </div>

@@ -37,6 +37,19 @@ export default function ArticleReader({
   const [fontScale, setFontScale] = useState(1);
   const [lookupTerm, setLookupTerm] = useState<string | null>(null);
   const [noteTarget, setNoteTarget] = useState<{ text: string; locator: Locator } | null>(null);
+  const [progress, setProgress] = useState(0);
+
+  // Reading progress based on page scroll.
+  useEffect(() => {
+    const onScroll = () => {
+      const el = document.documentElement;
+      const max = el.scrollHeight - el.clientHeight;
+      setProgress(max > 0 ? Math.min(100, (el.scrollTop / max) * 100) : 0);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // Scroll to (and briefly flash) a highlight when the panel requests it.
   useEffect(() => {
@@ -117,6 +130,14 @@ export default function ArticleReader({
 
   return (
     <div className="relative">
+      {/* Reading progress */}
+      <div className="fixed inset-x-0 top-0 z-30 h-0.5 bg-transparent">
+        <div
+          className="h-full bg-accent transition-[width] duration-150"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+
       {/* Text-size zoom */}
       <div className="mb-4 flex items-center justify-end gap-1">
         <button
@@ -198,13 +219,13 @@ export default function ArticleReader({
       <NoteComposer
         quote={noteTarget?.text ?? null}
         onClose={() => setNoteTarget(null)}
-        onSave={async (comment) => {
+        onSave={async (comment, color) => {
           if (!noteTarget) return;
           await createHighlight({
             itemId,
             text: noteTarget.text,
             locator: JSON.stringify(noteTarget.locator),
-            color: "yellow",
+            color,
             note: comment,
           });
           router.refresh();

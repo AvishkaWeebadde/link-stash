@@ -448,13 +448,13 @@ export default function PdfReader({
       <NoteComposer
         quote={noteTarget?.text ?? null}
         onClose={() => setNoteTarget(null)}
-        onSave={async (comment) => {
+        onSave={async (comment, color) => {
           if (!noteTarget) return;
           await createHighlight({
             itemId,
             text: noteTarget.text,
             locator: JSON.stringify({ page, rect: noteTarget.rect }),
-            color: "yellow",
+            color,
             note: comment,
           });
           router.refresh();

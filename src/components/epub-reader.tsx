@@ -275,7 +275,7 @@ export default function EpubReader({
       <NoteComposer
         quote={noteTarget?.text ?? null}
         onClose={() => setNoteTarget(null)}
-        onSave={async (comment) => {
+        onSave={async (comment, color) => {
           const rendition = renditionRef.current;
           if (!noteTarget) return;
           try {
@@ -283,11 +283,11 @@ export default function EpubReader({
               itemId,
               text: noteTarget.text,
               locator: noteTarget.cfi,
-              color: "yellow",
+              color,
               note: comment,
             });
             if (rendition)
-              addAnnotation(rendition, noteTarget.cfi, "yellow", () =>
+              addAnnotation(rendition, noteTarget.cfi, color, () =>
                 dispatchFocus(id),
               );
           } catch {}
