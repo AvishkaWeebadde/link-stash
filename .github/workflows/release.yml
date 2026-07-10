@@ -68,11 +68,17 @@ jobs:
           retry_wait_seconds: 30
           command: npm run tauri:build
 
-      - name: Publish draft release
+      - name: Upload installer as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linkstash-windows-installer
+          path: src-tauri/target/release/bundle/nsis/*-setup.exe
+
+      - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: LinkStash ${{ github.ref_name }}
           body: "Download the installer below and run it."
-          draft: true
+          draft: false
           files: src-tauri/target/release/bundle/nsis/*-setup.exe
