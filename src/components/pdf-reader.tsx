@@ -181,8 +181,18 @@ export default function PdfReader({
     const dpr = window.devicePixelRatio || 1;
     const unscaled = pageObj.getViewport({ scale: 1 });
     const cssScale = (container.clientWidth / unscaled.width) * zoomRef.current;
-    const viewport = pageObj.getViewport({ scale: cssScale * dpr });
     const cssViewport = pageObj.getViewport({ scale: cssScale });
+
+    // Supersample the backing store above the device pixel ratio. The webview
+    // re-rasterizes the canvas at a lower resolution when it promotes it to a
+    // composited layer on click/selection (the "blur on interaction" effect);
+    // extra backing resolution keeps text crisp through that. Capped so large
+    // pages / high zoom don't blow up memory.
+    let render = dpr * 2;
+    const maxDim = 3600;
+    const longSide = Math.max(cssViewport.width, cssViewport.height) * render;
+    if (longSide > maxDim) render *= maxDim / longSide;
+    const viewport = pageObj.getViewport({ scale: cssScale * render });
 
     canvas.width = viewport.width;
     canvas.height = viewport.height;
@@ -380,8 +390,8 @@ export default function PdfReader({
         />
       </div>
       <div ref={containerRef} className="max-h-[85vh] overflow-auto">
-        <div ref={stageRef} className="relative mx-auto">
-          <canvas ref={canvasRef} className="block rounded-lg shadow-sm" />
+        <div ref={stageRef} className="relative mx-auto overflow-hidden rounded-lg shadow-sm">
+          <canvas ref={canvasRef} className="block" />
           <div
             ref={textLayerRef}
             className="pdf-text-layer"
