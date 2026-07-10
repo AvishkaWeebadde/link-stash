@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateProgress } from "@/app/actions/items";
 import { createHighlight } from "@/app/actions/highlights";
+import { saveOcrText } from "@/app/actions/ocr";
 import ReadAloud from "@/components/read-aloud";
 import LookupPanel from "@/components/lookup-panel";
 import NoteComposer from "@/components/note-composer";
@@ -47,7 +48,51 @@ export default function PdfReader({
   const [pageText, setPageText] = useState("");
   const [zoom, setZoom] = useState(1);
   const [hlMode, setHlMode] = useState(false);
+  const [ocr, setOcr] = useState<{ running: boolean; progress: number; error?: string }>({
+    running: false,
+    progress: 0,
+  });
   const zoomRef = useRef(1);
+
+  // Run OCR over every page (client-side), then store the text so the document
+  // becomes searchable and read-aloud-able. Used for scanned PDFs.
+  async function runOcr() {
+    const pdf = pdfRef.current;
+    if (!pdf || ocr.running) return;
+    setOcr({ running: true, progress: 0 });
+    try {
+      const Tesseract = await import("tesseract.js");
+      const worker = await Tesseract.createWorker("eng", 1, {
+        workerPath: "/tesseract/worker.min.js",
+        corePath: "/tesseract",
+        langPath: "/tesseract",
+      });
+      const cvs = document.createElement("canvas");
+      const ctx = cvs.getContext("2d");
+      let full = "";
+      const n = pdf.numPages;
+      for (let i = 1; i <= n && ctx; i++) {
+        const p = await pdf.getPage(i);
+        const vp = p.getViewport({ scale: 2 });
+        cvs.width = vp.width;
+        cvs.height = vp.height;
+        await p.render({ canvasContext: ctx, viewport: vp }).promise;
+        const { data } = await worker.recognize(cvs);
+        full += data.text + "\n";
+        setOcr({ running: true, progress: Math.round((i / n) * 100) });
+      }
+      await worker.terminate();
+      await saveOcrText(itemId, full);
+      setOcr({ running: false, progress: 100 });
+      router.refresh();
+    } catch (e) {
+      setOcr({
+        running: false,
+        progress: 0,
+        error: e instanceof Error ? e.message : "OCR failed",
+      });
+    }
+  }
 
   // Area highlights for the current page (locator = {page, rect}).
   const pageHighlights: PdfHighlight[] = highlights
@@ -243,6 +288,18 @@ export default function PdfReader({
 
   return (
     <div>
+      {(ocr.running || ocr.error) && (
+        <div className="mb-3 rounded-lg border border-line bg-accent-soft px-3 py-2 text-center text-sm">
+          {ocr.error ? (
+            <span className="text-red-600">OCR failed: {ocr.error}</span>
+          ) : (
+            <span className="text-accent">
+              Recognizing text… {ocr.progress}% — you can keep reading; this runs
+              in the background.
+            </span>
+          )}
+        </div>
+      )}
       <div className="sticky top-14 z-10 mb-4 flex flex-wrap items-center justify-center gap-3 rounded-full border border-line bg-surface px-3 py-1.5">
         <NavBtn onClick={() => go(-1)} disabled={page <= 1} label="‹" />
         <span className="min-w-24 text-center text-sm text-muted">
@@ -266,6 +323,16 @@ export default function PdfReader({
           ✏️ Highlight
         </button>
         <ReadAloud text={pageText || fallbackText} />
+        {!fallbackText.trim() && (
+          <button
+            onClick={runOcr}
+            disabled={ocr.running}
+            className="flex h-8 items-center rounded-lg px-2.5 text-sm text-muted transition hover:bg-surface-2 hover:text-fg disabled:opacity-60"
+            title="Recognize text (OCR) so this scanned PDF becomes searchable and readable"
+          >
+            {ocr.running ? `🔤 OCR ${ocr.progress}%` : "🔤 OCR"}
+          </button>
+        )}
         <span className="h-4 w-px bg-line" />
         <BookmarksBar
           itemId={itemId}

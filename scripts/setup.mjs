@@ -35,5 +35,14 @@ function generatePrisma() {
   }
 }
 
+async function fetchOcrAssets() {
+  try {
+    execSync("node scripts/fetch-ocr-assets.mjs", { stdio: "inherit" });
+  } catch {
+    console.warn("[setup] OCR asset fetch failed; OCR will be unavailable.");
+  }
+}
+
 await copyPdfWorker();
 generatePrisma();
+await fetchOcrAssets();
