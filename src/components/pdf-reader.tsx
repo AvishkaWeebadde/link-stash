@@ -4,15 +4,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { updateProgress } from "@/app/actions/items";
 import ReadAloud from "@/components/read-aloud";
 import LookupPanel from "@/components/lookup-panel";
+import NoteComposer from "@/components/note-composer";
+import BookmarksBar, { type BookmarkData } from "@/components/bookmarks-bar";
 
 export default function PdfReader({
   itemId,
   initialPage,
   fallbackText = "",
+  bookmarks = [],
 }: {
   itemId: string;
   initialPage: number;
   fallbackText?: string;
+  bookmarks?: BookmarkData[];
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -24,6 +28,7 @@ export default function PdfReader({
   const pdfjsRef = useRef<any>(null);
   const renderTaskRef = useRef<{ cancel: () => void } | null>(null);
   const [lookupTerm, setLookupTerm] = useState<string | null>(null);
+  const [composeQuote, setComposeQuote] = useState<string | null>(null);
   const [selPopover, setSelPopover] = useState<{ x: number; y: number; text: string } | null>(null);
 
   const [page, setPage] = useState(Math.max(1, initialPage));
@@ -201,6 +206,14 @@ export default function PdfReader({
         <NavBtn onClick={() => setZoom((z) => Math.min(3, z + 0.15))} disabled={zoom >= 3} label="+" />
         <span className="h-4 w-px bg-line" />
         <ReadAloud text={pageText || fallbackText} />
+        <span className="h-4 w-px bg-line" />
+        <BookmarksBar
+          itemId={itemId}
+          bookmarks={bookmarks}
+          getCurrentLocator={() => String(page)}
+          onJump={(l) => setPage(Math.min(numPages, Math.max(1, parseInt(l, 10) || 1)))}
+          formatLabel={(l) => `Page ${l}`}
+        />
       </div>
       <div ref={containerRef} className="flex justify-center">
         <div ref={stageRef} className="relative">
@@ -229,10 +242,26 @@ export default function PdfReader({
           >
             🔍 Look up
           </button>
+          <button
+            onClick={() => {
+              setComposeQuote(selPopover.text);
+              window.getSelection()?.removeAllRanges();
+              setSelPopover(null);
+            }}
+            className="flex h-7 items-center gap-1 rounded-full px-2 text-sm hover:bg-surface-2"
+            title="Note this passage"
+          >
+            📝 Note
+          </button>
         </div>
       )}
 
       <LookupPanel term={lookupTerm} onClose={() => setLookupTerm(null)} />
+      <NoteComposer
+        itemId={itemId}
+        quote={composeQuote}
+        onClose={() => setComposeQuote(null)}
+      />
     </div>
   );
 }

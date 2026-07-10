@@ -5,6 +5,8 @@ import { updateProgress } from "@/app/actions/items";
 import { createHighlight } from "@/app/actions/highlights";
 import ReadAloud from "@/components/read-aloud";
 import LookupPanel from "@/components/lookup-panel";
+import NoteComposer from "@/components/note-composer";
+import BookmarksBar, { type BookmarkData } from "@/components/bookmarks-bar";
 import {
   HIGHLIGHT_COLORS,
   HIGHLIGHT_COLOR_HEX,
@@ -17,11 +19,13 @@ export default function EpubReader({
   itemId,
   initialCfi,
   fallbackText = "",
+  bookmarks = [],
   highlights,
 }: {
   itemId: string;
   initialCfi: string | null;
   fallbackText?: string;
+  bookmarks?: BookmarkData[];
   highlights: ExistingHighlight[];
 }) {
   const viewerRef = useRef<HTMLDivElement>(null);
@@ -33,6 +37,8 @@ export default function EpubReader({
   const [fontPct, setFontPct] = useState(100);
   const [sectionText, setSectionText] = useState("");
   const [lookupTerm, setLookupTerm] = useState<string | null>(null);
+  const [composeQuote, setComposeQuote] = useState<string | null>(null);
+  const currentCfiRef = useRef<string>(initialCfi ?? "");
 
   // Apply font size to the rendition whenever it changes.
   useEffect(() => {
@@ -102,6 +108,7 @@ export default function EpubReader({
           const cfi = loc?.start?.cfi ?? "";
           setPct(Math.round(percentage * 100));
           if (cfi) {
+            currentCfiRef.current = cfi;
             updateProgress(itemId, percentage, cfi).catch(() => {});
           }
           updateSectionText(rendition);
@@ -171,6 +178,13 @@ export default function EpubReader({
           <ZoomBtn onClick={() => setFontPct((p) => Math.min(200, p + 10))} label="A+" />
         </div>
         <ReadAloud text={sectionText || fallbackText} />
+        <BookmarksBar
+          itemId={itemId}
+          bookmarks={bookmarks}
+          getCurrentLocator={() => currentCfiRef.current || null}
+          onJump={(cfi) => renditionRef.current?.display(cfi)}
+          formatLabel={() => "Saved location"}
+        />
       </div>
 
       <div className="relative rounded-xl border border-line bg-surface">
@@ -221,6 +235,16 @@ export default function EpubReader({
               🔍
             </button>
             <button
+              onClick={() => {
+                setComposeQuote(selection.text);
+                setSelection(null);
+              }}
+              title="Note this passage"
+              className="px-1.5 text-lg hover:opacity-70"
+            >
+              📝
+            </button>
+            <button
               onClick={() => setSelection(null)}
               className="ml-1 px-2 text-muted hover:text-fg"
             >
@@ -231,6 +255,11 @@ export default function EpubReader({
       )}
 
       <LookupPanel term={lookupTerm} onClose={() => setLookupTerm(null)} />
+      <NoteComposer
+        itemId={itemId}
+        quote={composeQuote}
+        onClose={() => setComposeQuote(null)}
+      />
     </div>
   );
 }

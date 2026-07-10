@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createHighlight } from "@/app/actions/highlights";
 import LookupPanel from "@/components/lookup-panel";
+import NoteComposer from "@/components/note-composer";
 import { HIGHLIGHT_COLORS, HIGHLIGHT_COLOR_HEX, type HighlightColor } from "@/lib/constants";
 
 export type HighlightData = {
@@ -35,6 +36,7 @@ export default function ArticleReader({
   const [saving, setSaving] = useState(false);
   const [fontScale, setFontScale] = useState(1);
   const [lookupTerm, setLookupTerm] = useState<string | null>(null);
+  const [composeQuote, setComposeQuote] = useState<string | null>(null);
 
   // (Re)render clean HTML and paint all highlights whenever inputs change.
   useEffect(() => {
@@ -155,10 +157,26 @@ export default function ArticleReader({
           >
             🔍
           </button>
+          <button
+            onClick={() => {
+              setComposeQuote(popover.text);
+              window.getSelection()?.removeAllRanges();
+              setPopover(null);
+            }}
+            title="Note this passage"
+            className="flex h-6 items-center rounded-full px-1.5 text-sm hover:bg-surface-2"
+          >
+            📝
+          </button>
         </div>
       )}
 
       <LookupPanel term={lookupTerm} onClose={() => setLookupTerm(null)} />
+      <NoteComposer
+        itemId={itemId}
+        quote={composeQuote}
+        onClose={() => setComposeQuote(null)}
+      />
     </div>
   );
 }

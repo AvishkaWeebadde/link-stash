@@ -10,6 +10,7 @@ import ItemOrganizer from "@/components/item-organizer";
 import PdfReader from "@/components/pdf-reader";
 import ReadAloud from "@/components/read-aloud";
 import { listItemNotes } from "@/lib/notes";
+import { listItemBookmarks } from "@/lib/bookmarks";
 import { requireUser } from "@/lib/dal";
 import { getItem, listCollections } from "@/lib/items";
 import {
@@ -31,6 +32,11 @@ export default async function ReaderPage({
 
   const allCollections = await listCollections(userId);
   const notes = await listItemNotes(userId, item.id);
+  const bookmarks = (await listItemBookmarks(userId, item.id)).map((b) => ({
+    id: b.id,
+    locator: b.locator,
+    label: b.label,
+  }));
 
   const type = item.type as ItemType;
   const format = itemFormat(item.filePath);
@@ -124,6 +130,7 @@ export default async function ReaderPage({
               itemId={item.id}
               initialPage={item.locator ? parseInt(item.locator, 10) || 1 : 1}
               fallbackText={item.textContent ?? ""}
+              bookmarks={bookmarks}
             />
             <HighlightsList
               highlights={item.highlights.map((h) => ({
@@ -140,6 +147,7 @@ export default async function ReaderPage({
               itemId={item.id}
               initialCfi={item.locator}
               fallbackText={item.textContent ?? ""}
+              bookmarks={bookmarks}
               highlights={item.highlights.map((h) => ({
                 id: h.id,
                 color: h.color,

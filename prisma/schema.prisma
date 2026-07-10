@@ -25,6 +25,7 @@ model User {
   collections Collection[]
   highlights  Highlight[]
   notes       Note[]
+  bookmarks   Bookmark[]
 }
 
 model Item {
@@ -66,6 +67,7 @@ model Item {
   collections Collection[] @relation("ItemCollections")
   highlights  Highlight[]
   notes       Note[]
+  bookmarks   Bookmark[]
 
   @@index([userId, status])
   @@index([userId, type])
@@ -134,6 +136,24 @@ model Note {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([itemId])
+  @@index([userId, createdAt])
+}
+
+// A saved location within an item (page for PDFs, CFI for EPUBs, scroll
+// percentage for articles) with an optional label/note. Jump back to it later.
+model Bookmark {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId String
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  locator String // page number | EPUB CFI | scroll percentage
+  label   String? // optional note
+
+  createdAt DateTime @default(now())
 
   @@index([itemId])
   @@index([userId, createdAt])
