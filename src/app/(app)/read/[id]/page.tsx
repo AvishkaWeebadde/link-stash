@@ -60,6 +60,14 @@ export default async function ReaderPage({
           {format === "html" && item.textContent && (
             <ReadAloud text={item.textContent} />
           )}
+          <ItemNotes
+            itemId={item.id}
+            notes={notes.map((n) => ({
+              id: n.id,
+              body: n.body,
+              createdAt: n.createdAt,
+            }))}
+          />
           <FavoriteButton id={item.id} favorite={item.favorite} className="text-lg" />
           <ItemActions id={item.id} status={item.status as ItemStatus} />
         </div>
@@ -168,15 +176,6 @@ export default async function ReaderPage({
             Unsupported item type.
           </div>
         )}
-
-        <ItemNotes
-          itemId={item.id}
-          notes={notes.map((n) => ({
-            id: n.id,
-            body: n.body,
-            createdAt: n.createdAt,
-          }))}
-        />
       </article>
     </div>
   );
