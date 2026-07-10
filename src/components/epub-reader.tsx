@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { updateProgress } from "@/app/actions/items";
 import { createHighlight } from "@/app/actions/highlights";
 import ReadAloud from "@/components/read-aloud";
+import LookupPanel from "@/components/lookup-panel";
 import {
   HIGHLIGHT_COLORS,
   HIGHLIGHT_COLOR_HEX,
@@ -31,6 +32,7 @@ export default function EpubReader({
   const [pct, setPct] = useState(0);
   const [fontPct, setFontPct] = useState(100);
   const [sectionText, setSectionText] = useState("");
+  const [lookupTerm, setLookupTerm] = useState<string | null>(null);
 
   // Apply font size to the rendition whenever it changes.
   useEffect(() => {
@@ -207,6 +209,17 @@ export default function EpubReader({
                 aria-label={`Highlight ${c}`}
               />
             ))}
+            <span className="mx-0.5 h-6 w-px bg-line" />
+            <button
+              onClick={() => {
+                setLookupTerm(selection.text);
+                setSelection(null);
+              }}
+              title="Look up"
+              className="px-1.5 text-lg hover:opacity-70"
+            >
+              🔍
+            </button>
             <button
               onClick={() => setSelection(null)}
               className="ml-1 px-2 text-muted hover:text-fg"
@@ -216,6 +229,8 @@ export default function EpubReader({
           </div>
         </div>
       )}
+
+      <LookupPanel term={lookupTerm} onClose={() => setLookupTerm(null)} />
     </div>
   );
 }

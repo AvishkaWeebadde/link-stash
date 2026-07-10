@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createHighlight } from "@/app/actions/highlights";
+import LookupPanel from "@/components/lookup-panel";
 import { HIGHLIGHT_COLORS, HIGHLIGHT_COLOR_HEX, type HighlightColor } from "@/lib/constants";
 
 export type HighlightData = {
@@ -33,6 +34,7 @@ export default function ArticleReader({
   } | null>(null);
   const [saving, setSaving] = useState(false);
   const [fontScale, setFontScale] = useState(1);
+  const [lookupTerm, setLookupTerm] = useState<string | null>(null);
 
   // (Re)render clean HTML and paint all highlights whenever inputs change.
   useEffect(() => {
@@ -141,8 +143,22 @@ export default function ArticleReader({
               style={{ background: HIGHLIGHT_COLOR_HEX[c] }}
             />
           ))}
+          <span className="mx-0.5 h-5 w-px bg-line" />
+          <button
+            onClick={() => {
+              setLookupTerm(popover.text);
+              window.getSelection()?.removeAllRanges();
+              setPopover(null);
+            }}
+            title="Look up"
+            className="flex h-6 items-center rounded-full px-1.5 text-sm hover:bg-surface-2"
+          >
+            🔍
+          </button>
         </div>
       )}
+
+      <LookupPanel term={lookupTerm} onClose={() => setLookupTerm(null)} />
     </div>
   );
 }
