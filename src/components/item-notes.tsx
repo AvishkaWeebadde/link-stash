@@ -28,12 +28,27 @@ export default function ItemNotes({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [pending, start] = useTransition();
+  // Live list fetched when the panel opens; falls back to the server prop.
+  const [list, setList] = useState<Note[] | null>(null);
+  const items = list ?? notes;
+
+  async function refresh() {
+    try {
+      const res = await fetch(`/api/notes?itemId=${encodeURIComponent(itemId)}`);
+      if (res.ok) setList((await res.json()).notes ?? []);
+    } catch {
+      /* keep existing */
+    }
+    router.refresh();
+  }
 
   useEffect(() => {
     if (!open) return;
+    refresh();
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   function submit() {
@@ -42,7 +57,7 @@ export default function ItemNotes({
     start(async () => {
       await addNote(itemId, body);
       setDraft("");
-      router.refresh();
+      await refresh();
     });
   }
 
@@ -53,7 +68,7 @@ export default function ItemNotes({
         className="flex h-8 items-center gap-1 rounded-lg px-2.5 text-sm text-muted transition hover:bg-surface-2 hover:text-fg"
         title="Notes"
       >
-        📝 Notes{notes.length > 0 && <span className="text-faint">{notes.length}</span>}
+        📝 Notes{items.length > 0 && <span className="text-faint">{items.length}</span>}
       </button>
 
       {open && (
@@ -95,12 +110,12 @@ export default function ItemNotes({
             </div>
 
             <ul className="flex-1 space-y-3 overflow-y-auto p-4">
-              {notes.length === 0 && (
+              {items.length === 0 && (
                 <li className="text-sm text-muted">
                   No notes yet. Add one above, or select text and choose 📝 Note.
                 </li>
               )}
-              {notes.map((n) => (
+              {items.map((n) => (
                 <li key={n.id} className="rounded-xl border border-line bg-bg p-3">
                   {editingId === n.id ? (
                     <div>
@@ -122,7 +137,7 @@ export default function ItemNotes({
                             start(async () => {
                               await updateNote(n.id, editText);
                               setEditingId(null);
-                              router.refresh();
+                              await refresh();
                             })
                           }
                           className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-accent-fg hover:opacity-90"
@@ -152,7 +167,7 @@ export default function ItemNotes({
                           onConfirm={() =>
                             start(async () => {
                               await deleteNote(n.id);
-                              router.refresh();
+                              await refresh();
                             })
                           }
                           title="Delete note?"
