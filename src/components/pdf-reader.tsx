@@ -215,7 +215,7 @@ export default function PdfReader({
 
   return (
     <div>
-      <div className="sticky top-14 z-10 mb-4 flex items-center justify-center gap-3 rounded-full border border-line bg-surface/90 px-3 py-1.5 backdrop-blur">
+      <div className="sticky top-14 z-10 mb-4 flex flex-wrap items-center justify-center gap-3 rounded-full border border-line bg-surface px-3 py-1.5">
         <NavBtn onClick={() => go(-1)} disabled={page <= 1} label="‹" />
         <span className="min-w-24 text-center text-sm text-muted">
           {loading ? "Loading…" : `Page ${page} / ${numPages}`}

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { addNote, deleteNote, updateNote } from "@/app/actions/notes";
 import ConfirmButton from "@/components/confirm-button";
 
@@ -30,7 +31,10 @@ export default function ItemNotes({
   const [pending, start] = useTransition();
   // Live list fetched when the panel opens; falls back to the server prop.
   const [list, setList] = useState<Note[] | null>(null);
+  const [mounted, setMounted] = useState(false);
   const items = list ?? notes;
+
+  useEffect(() => setMounted(true), []);
 
   async function refresh() {
     try {
@@ -71,10 +75,10 @@ export default function ItemNotes({
         📝 Notes{items.length > 0 && <span className="text-faint">{items.length}</span>}
       </button>
 
-      {open && (
+      {open && mounted && createPortal(
         <>
-          <div className="fixed inset-0 z-50 bg-black/30" onClick={() => setOpen(false)} />
-          <aside className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-line bg-surface shadow-xl">
+          <div className="fixed inset-0 z-[100] bg-black/50" onClick={() => setOpen(false)} />
+          <aside className="fixed right-0 top-0 z-[100] flex h-dvh w-full max-w-md flex-col border-l border-line bg-surface shadow-2xl">
             <div className="flex items-center justify-between border-b border-line px-4 py-3">
               <h2 className="text-lg font-semibold">📝 Notes</h2>
               <button
@@ -109,7 +113,7 @@ export default function ItemNotes({
               </div>
             </div>
 
-            <ul className="flex-1 space-y-3 overflow-y-auto p-4">
+            <ul className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
               {items.length === 0 && (
                 <li className="text-sm text-muted">
                   No notes yet. Add one above, or select text and choose 📝 Note.
@@ -185,7 +189,8 @@ export default function ItemNotes({
               ))}
             </ul>
           </aside>
-        </>
+        </>,
+        document.body,
       )}
     </>
   );

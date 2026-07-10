@@ -47,7 +47,7 @@ export default async function ReaderPage({
   return (
     <div className="min-h-dvh">
       {/* Toolbar */}
-      <div className="sticky top-0 z-20 border-b border-line bg-bg/85 backdrop-blur">
+      <div className="sticky top-0 z-20 border-b border-line bg-bg">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-2.5">
           <Link
             href="/library"
