@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { updateProgress } from "@/app/actions/items";
+import { createHighlight } from "@/app/actions/highlights";
 import ReadAloud from "@/components/read-aloud";
 import LookupPanel from "@/components/lookup-panel";
 import NoteComposer from "@/components/note-composer";
@@ -32,9 +34,11 @@ export default function PdfReader({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pdfjsRef = useRef<any>(null);
   const renderTaskRef = useRef<{ cancel: () => void } | null>(null);
+  const router = useRouter();
+  type Norm = { x: number; y: number; w: number; h: number };
   const [lookupTerm, setLookupTerm] = useState<string | null>(null);
-  const [composeQuote, setComposeQuote] = useState<string | null>(null);
-  const [selPopover, setSelPopover] = useState<{ x: number; y: number; text: string } | null>(null);
+  const [noteTarget, setNoteTarget] = useState<{ text: string; rect: Norm } | null>(null);
+  const [selPopover, setSelPopover] = useState<{ x: number; y: number; text: string; rect: Norm } | null>(null);
 
   const [page, setPage] = useState(Math.max(1, initialPage));
   const [numPages, setNumPages] = useState(0);
@@ -212,12 +216,21 @@ export default function PdfReader({
   function onTextMouseUp() {
     const sel = window.getSelection();
     const text = sel?.toString().trim() ?? "";
-    if (!text || !sel || sel.rangeCount === 0) {
+    const stage = stageRef.current;
+    if (!text || !sel || sel.rangeCount === 0 || !stage) {
       setSelPopover(null);
       return;
     }
     const rect = sel.getRangeAt(0).getBoundingClientRect();
-    setSelPopover({ x: rect.left + rect.width / 2, y: rect.top, text });
+    // Normalize the selection's bounds to the page for a highlight.
+    const s = stage.getBoundingClientRect();
+    const norm = {
+      x: (rect.left - s.left) / s.width,
+      y: (rect.top - s.top) / s.height,
+      w: rect.width / s.width,
+      h: rect.height / s.height,
+    };
+    setSelPopover({ x: rect.left + rect.width / 2, y: rect.top, text, rect: norm });
   }
 
   if (error) {
@@ -297,12 +310,12 @@ export default function PdfReader({
           </button>
           <button
             onClick={() => {
-              setComposeQuote(selPopover.text);
+              setNoteTarget({ text: selPopover.text, rect: selPopover.rect });
               window.getSelection()?.removeAllRanges();
               setSelPopover(null);
             }}
             className="flex h-7 items-center gap-1 rounded-full px-2 text-sm hover:bg-surface-2"
-            title="Note this passage"
+            title="Highlight & note this passage"
           >
             📝 Note
           </button>
@@ -311,9 +324,19 @@ export default function PdfReader({
 
       <LookupPanel term={lookupTerm} onClose={() => setLookupTerm(null)} />
       <NoteComposer
-        itemId={itemId}
-        quote={composeQuote}
-        onClose={() => setComposeQuote(null)}
+        quote={noteTarget?.text ?? null}
+        onClose={() => setNoteTarget(null)}
+        onSave={async (comment) => {
+          if (!noteTarget) return;
+          await createHighlight({
+            itemId,
+            text: noteTarget.text,
+            locator: JSON.stringify({ page, rect: noteTarget.rect }),
+            color: "yellow",
+            note: comment,
+          });
+          router.refresh();
+        }}
       />
     </div>
   );

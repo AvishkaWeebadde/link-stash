@@ -37,7 +37,7 @@ export default function EpubReader({
   const [fontPct, setFontPct] = useState(100);
   const [sectionText, setSectionText] = useState("");
   const [lookupTerm, setLookupTerm] = useState<string | null>(null);
-  const [composeQuote, setComposeQuote] = useState<string | null>(null);
+  const [noteTarget, setNoteTarget] = useState<{ cfi: string; text: string } | null>(null);
   const currentCfiRef = useRef<string>(initialCfi ?? "");
 
   // Apply font size to the rendition whenever it changes.
@@ -108,7 +108,8 @@ export default function EpubReader({
 
         // Re-apply saved highlights.
         for (const hl of highlights) {
-          if (hl.locator) addAnnotation(rendition, hl.locator, hl.color);
+          if (hl.locator)
+            addAnnotation(rendition, hl.locator, hl.color, () => dispatchFocus(hl.id));
         }
 
         // Generate locations for percentage-based progress (best effort).
@@ -147,17 +148,20 @@ export default function EpubReader({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemId]);
 
-  async function saveHighlight(color: HighlightColor) {
+  async function saveHighlight(color: HighlightColor, note?: string) {
     const rendition = renditionRef.current;
-    if (!selection || !rendition) return;
-    addAnnotation(rendition, selection.cfi, color);
+    const sel = selection;
+    if (!sel || !rendition) return;
+    setSelection(null);
     try {
-      await createHighlight({
+      const id = await createHighlight({
         itemId,
-        text: selection.text,
-        locator: selection.cfi,
+        text: sel.text,
+        locator: sel.cfi,
         color,
+        note,
       });
+      addAnnotation(rendition, sel.cfi, color, () => dispatchFocus(id));
     } catch {}
     // Clear the in-book selection.
     try {
@@ -165,7 +169,6 @@ export default function EpubReader({
         c.window.getSelection()?.removeAllRanges(),
       );
     } catch {}
-    setSelection(null);
   }
 
   if (error) {
@@ -250,10 +253,10 @@ export default function EpubReader({
             </button>
             <button
               onClick={() => {
-                setComposeQuote(selection.text);
+                setNoteTarget({ cfi: selection.cfi, text: selection.text });
                 setSelection(null);
               }}
-              title="Note this passage"
+              title="Highlight & note this passage"
               className="px-1.5 text-lg hover:opacity-70"
             >
               📝
@@ -270,9 +273,25 @@ export default function EpubReader({
 
       <LookupPanel term={lookupTerm} onClose={() => setLookupTerm(null)} />
       <NoteComposer
-        itemId={itemId}
-        quote={composeQuote}
-        onClose={() => setComposeQuote(null)}
+        quote={noteTarget?.text ?? null}
+        onClose={() => setNoteTarget(null)}
+        onSave={async (comment) => {
+          const rendition = renditionRef.current;
+          if (!noteTarget) return;
+          try {
+            const id = await createHighlight({
+              itemId,
+              text: noteTarget.text,
+              locator: noteTarget.cfi,
+              color: "yellow",
+              note: comment,
+            });
+            if (rendition)
+              addAnnotation(rendition, noteTarget.cfi, "yellow", () =>
+                dispatchFocus(id),
+              );
+          } catch {}
+        }}
       />
     </div>
   );
@@ -289,8 +308,17 @@ function ZoomBtn({ onClick, label }: { onClick: () => void; label: string }) {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function addAnnotation(rendition: any, cfiRange: string, color: string) {
+function dispatchFocus(id: string) {
+  window.dispatchEvent(new CustomEvent("linkstash:focus", { detail: { id } }));
+}
+
+function addAnnotation(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  rendition: any,
+  cfiRange: string,
+  color: string,
+  onClick?: () => void,
+) {
   const hex =
     HIGHLIGHT_COLOR_HEX[color as HighlightColor] ?? HIGHLIGHT_COLOR_HEX.yellow;
   try {
@@ -298,7 +326,7 @@ function addAnnotation(rendition: any, cfiRange: string, color: string) {
       "highlight",
       cfiRange,
       {},
-      undefined,
+      onClick,
       "linkstash-hl",
       { fill: hex, "fill-opacity": "0.4" },
     );

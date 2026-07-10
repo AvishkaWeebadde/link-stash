@@ -36,16 +36,18 @@ export default function ArticleReader({
   const [saving, setSaving] = useState(false);
   const [fontScale, setFontScale] = useState(1);
   const [lookupTerm, setLookupTerm] = useState<string | null>(null);
-  const [composeQuote, setComposeQuote] = useState<string | null>(null);
+  const [noteTarget, setNoteTarget] = useState<{ text: string; locator: Locator } | null>(null);
 
-  // Scroll to a highlight when the Annotations panel requests it.
+  // Scroll to (and briefly flash) a highlight when the panel requests it.
   useEffect(() => {
     const onGoto = (e: Event) => {
       const id = (e as CustomEvent).detail?.id;
       if (!id) return;
-      ref.current
-        ?.querySelector(`[data-hl="${id}"]`)
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      const el = ref.current?.querySelector(`[data-hl="${id}"]`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("hl-flash");
+      setTimeout(() => el.classList.remove("hl-flash"), 1600);
     };
     window.addEventListener("linkstash:goto", onGoto);
     return () => window.removeEventListener("linkstash:goto", onGoto);
@@ -140,6 +142,14 @@ export default function ArticleReader({
         ref={ref}
         className="prose"
         onMouseUp={onMouseUp}
+        onClick={(e) => {
+          const mark = (e.target as Element).closest?.("mark[data-hl]");
+          const id = mark?.getAttribute("data-hl");
+          if (id)
+            window.dispatchEvent(
+              new CustomEvent("linkstash:focus", { detail: { id } }),
+            );
+        }}
         style={{ fontSize: `${(1.19 * fontScale).toFixed(3)}rem` }}
       />
 
@@ -172,7 +182,7 @@ export default function ArticleReader({
           </button>
           <button
             onClick={() => {
-              setComposeQuote(popover.text);
+              setNoteTarget({ text: popover.text, locator: popover.locator });
               window.getSelection()?.removeAllRanges();
               setPopover(null);
             }}
@@ -186,9 +196,19 @@ export default function ArticleReader({
 
       <LookupPanel term={lookupTerm} onClose={() => setLookupTerm(null)} />
       <NoteComposer
-        itemId={itemId}
-        quote={composeQuote}
-        onClose={() => setComposeQuote(null)}
+        quote={noteTarget?.text ?? null}
+        onClose={() => setNoteTarget(null)}
+        onSave={async (comment) => {
+          if (!noteTarget) return;
+          await createHighlight({
+            itemId,
+            text: noteTarget.text,
+            locator: JSON.stringify(noteTarget.locator),
+            color: "yellow",
+            note: comment,
+          });
+          router.refresh();
+        }}
       />
     </div>
   );

@@ -207,6 +207,21 @@ mark[data-hl] {
   color: inherit;
 }
 
+/* Brief pulse when jumping to a highlight from the Annotations panel. */
+@keyframes hl-flash {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  30% {
+    box-shadow: 0 0 0 4px var(--ring);
+  }
+}
+.hl-flash {
+  animation: hl-flash 1.5s ease-in-out;
+  border-radius: 0.15em;
+}
+
 /*
   PDF selectable text layer — an invisible, positioned copy of the page's text
   overlaid on the canvas so users can select, copy, and look up. Mirrors the

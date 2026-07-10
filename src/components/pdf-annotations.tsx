@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import {
   createHighlight,
   deleteHighlight,
@@ -45,7 +45,21 @@ export default function PdfAnnotations({
   const [colorFor, setColorFor] = useState<Rect | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [noteText, setNoteText] = useState("");
+  const [flashId, setFlashId] = useState<string | null>(null);
   const [, start] = useTransition();
+
+  // Flash a highlight when the panel jumps to it.
+  useEffect(() => {
+    const onGoto = (e: Event) => {
+      const id = (e as CustomEvent).detail?.id;
+      if (!id) return;
+      setFlashId(id);
+      const t = setTimeout(() => setFlashId(null), 1600);
+      return () => clearTimeout(t);
+    };
+    window.addEventListener("linkstash:goto", onGoto);
+    return () => window.removeEventListener("linkstash:goto", onGoto);
+  }, []);
 
   function norm(clientX: number, clientY: number) {
     const r = rootRef.current!.getBoundingClientRect();
@@ -55,25 +69,11 @@ export default function PdfAnnotations({
     };
   }
 
-  function hitTest(nx: number, ny: number): PdfHighlight | null {
-    // Topmost (last drawn) first.
-    for (let i = highlights.length - 1; i >= 0; i--) {
-      const h = highlights[i];
-      const r = h.rect;
-      if (nx >= r.x && nx <= r.x + r.w && ny >= r.y && ny <= r.y + r.h) return h;
-    }
-    return null;
-  }
-
   function onPointerDown(e: React.PointerEvent) {
+    // Boxes handle their own clicks (and stop propagation), so a pointerdown
+    // that reaches the overlay is on empty space: start drawing.
     if (!active || colorFor) return;
     const p = norm(e.clientX, e.clientY);
-    const hit = hitTest(p.x, p.y);
-    if (hit) {
-      setActiveId(hit.id);
-      setNoteText(hit.note ?? "");
-      return;
-    }
     setActiveId(null);
     dragStart.current = p;
     setDraft({ x: p.x, y: p.y, w: 0, h: 0 });
@@ -126,22 +126,41 @@ export default function PdfAnnotations({
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
     >
-      {/* Saved highlights */}
+      {/* Saved highlights (clickable to focus the note, drawable over) */}
       {highlights.map((h) => (
         <div
           key={h.id}
-          className="absolute rounded-sm"
+          className="absolute cursor-pointer rounded-sm"
           style={{
             left: pct(h.rect.x),
             top: pct(h.rect.y),
             width: pct(h.rect.w),
             height: pct(h.rect.h),
+            pointerEvents: "auto",
             background:
               (HIGHLIGHT_COLOR_HEX[h.color as HighlightColor] ??
                 HIGHLIGHT_COLOR_HEX.yellow) + "66",
-            outline: h.note ? "2px solid " + HIGHLIGHT_COLOR_HEX.yellow : "none",
+            outline:
+              flashId === h.id
+                ? "3px solid var(--ring)"
+                : h.note
+                  ? "2px solid " + HIGHLIGHT_COLOR_HEX.yellow
+                  : "none",
           }}
-          title={h.note ?? undefined}
+          title={h.note ?? "Highlight"}
+          onPointerDown={(e) => {
+            if (active) e.stopPropagation();
+          }}
+          onClick={() => {
+            if (active) {
+              setActiveId(h.id);
+              setNoteText(h.note ?? "");
+            } else {
+              window.dispatchEvent(
+                new CustomEvent("linkstash:focus", { detail: { id: h.id } }),
+              );
+            }
+          }}
         />
       ))}
 

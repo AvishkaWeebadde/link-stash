@@ -1,24 +1,21 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { addNote } from "@/app/actions/notes";
 
 /**
- * Compose a note anchored to a selected passage. The quote is stored at the top
- * of the note body, followed by the user's comment. Works anywhere text can be
- * selected (articles, EPUBs, text PDFs).
+ * Compose a note for a selected passage. What "save" does is up to the caller
+ * (typically: create a highlight-with-note anchored to the selection), so the
+ * note is visible in the document and navigable from the Annotations panel.
  */
 export default function NoteComposer({
-  itemId,
   quote,
+  onSave,
   onClose,
 }: {
-  itemId: string;
   quote: string | null;
+  onSave: (comment: string) => Promise<void>;
   onClose: () => void;
 }) {
-  const router = useRouter();
   const [comment, setComment] = useState("");
   const [pending, start] = useTransition();
 
@@ -38,26 +35,22 @@ export default function NoteComposer({
   const trimmed = quote.length > 300 ? quote.slice(0, 300) + "…" : quote;
 
   function save() {
-    const body = comment.trim()
-      ? `“${trimmed}”\n\n${comment.trim()}`
-      : `“${trimmed}”`;
     start(async () => {
-      await addNote(itemId, body);
-      router.refresh();
+      await onSave(comment.trim());
       onClose();
     });
   }
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-start justify-center bg-black/40 p-4 pt-[12vh]"
+      className="fixed inset-0 z-[80] flex items-start justify-center bg-black/40 p-4 pt-[12vh]"
       onClick={onClose}
     >
       <div
         className="w-full max-w-lg rounded-2xl border border-line bg-surface p-4 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="mb-2 text-sm font-semibold">📝 Note on this passage</h3>
+        <h3 className="mb-2 text-sm font-semibold">📝 Highlight &amp; note</h3>
         <blockquote className="mb-3 max-h-32 overflow-y-auto border-l-2 border-accent pl-3 text-sm italic text-muted">
           {trimmed}
         </blockquote>
@@ -84,7 +77,7 @@ export default function NoteComposer({
             disabled={pending}
             className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-fg hover:opacity-90 disabled:opacity-60"
           >
-            Save note
+            Save highlight
           </button>
         </div>
       </div>

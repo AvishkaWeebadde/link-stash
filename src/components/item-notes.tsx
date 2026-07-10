@@ -42,6 +42,7 @@ export default function ItemNotes({ itemId }: { itemId: string }) {
   const [draft, setDraft] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
+  const [focusId, setFocusId] = useState<string | null>(null);
   const [, start] = useTransition();
 
   const count = notes.length + highlights.length;
@@ -62,8 +63,33 @@ export default function ItemNotes({ itemId }: { itemId: string }) {
   useEffect(() => {
     setMounted(true);
     refresh();
+    // Open + focus a specific annotation when a highlight is clicked in the doc.
+    const onFocus = (e: Event) => {
+      const id = (e as CustomEvent).detail?.id;
+      if (!id) return;
+      setOpen(true);
+      refresh();
+      setFocusId(id);
+    };
+    window.addEventListener("linkstash:focus", onFocus);
+    return () => window.removeEventListener("linkstash:focus", onFocus);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Scroll the focused annotation into view once the panel has it.
+  useEffect(() => {
+    if (!focusId || !open) return;
+    const t = setTimeout(() => {
+      document
+        .getElementById(`anno-${focusId}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 120);
+    const clear = setTimeout(() => setFocusId(null), 2000);
+    return () => {
+      clearTimeout(t);
+      clearTimeout(clear);
+    };
+  }, [focusId, open, highlights, notes]);
 
   useEffect(() => {
     if (!open) return;
@@ -132,7 +158,12 @@ export default function ItemNotes({ itemId }: { itemId: string }) {
                         return (
                           <li
                             key={h.id}
-                            className="rounded-xl border border-line bg-bg p-3"
+                            id={`anno-${h.id}`}
+                            className={`rounded-xl border bg-bg p-3 transition ${
+                              focusId === h.id
+                                ? "border-accent ring-2 ring-accent/40"
+                                : "border-line"
+                            }`}
                           >
                             <button
                               onClick={() => goto(h)}
@@ -239,7 +270,15 @@ export default function ItemNotes({ itemId }: { itemId: string }) {
                   )}
                   <ul className="space-y-2">
                     {notes.map((n) => (
-                      <li key={n.id} className="rounded-xl border border-line bg-bg p-3">
+                      <li
+                        key={n.id}
+                        id={`anno-${n.id}`}
+                        className={`rounded-xl border bg-bg p-3 transition ${
+                          focusId === n.id
+                            ? "border-accent ring-2 ring-accent/40"
+                            : "border-line"
+                        }`}
+                      >
                         {editId === n.id ? (
                           <div>
                             <textarea
