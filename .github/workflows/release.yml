@@ -25,11 +25,14 @@ jobs:
     # `prisma generate` and the build work on CI (there is no committed .env).
     env:
       DATABASE_URL: "file:./prisma/dev.db"
-      # Used by `tauri build` to sign the updater artifacts. Add these repo
-      # secrets before releasing (see docs/RELEASING.md); without the private
-      # key the signed-updater build fails.
+      # Used by `tauri build` to sign the updater artifacts. Add the private key
+      # as the TAURI_SIGNING_PRIVATE_KEY repo secret before releasing (see
+      # docs/RELEASING.md); without it the signed-updater build fails. The key
+      # has no password, so the password is an empty literal — do NOT wire it to
+      # a secret (GitHub secrets can't be empty, and a non-empty value makes
+      # signing fail with "wrong password").
       TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
 
     steps:
       - uses: actions/checkout@v4

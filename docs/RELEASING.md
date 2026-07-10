@@ -13,9 +13,13 @@ The keypair already exists (public key is committed in
 key** as a secret so CI can sign releases:
 
 1. Repo → **Settings → Secrets and variables → Actions → New repository secret**.
-2. Add:
+2. Add just one secret:
    - `TAURI_SIGNING_PRIVATE_KEY` — the full contents of the private key file.
-   - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` — leave the value **empty** (the key has no password).
+
+> The key has **no password**, so the workflow passes an empty
+> `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` literal. Do **not** create a password
+> secret — GitHub secrets can't be empty, and any non-empty value makes signing
+> fail with "wrong password for that key".
 
 > Keep the private key safe and out of git. If it is lost, existing installs
 > can no longer verify updates and users must reinstall manually. To rotate it,
