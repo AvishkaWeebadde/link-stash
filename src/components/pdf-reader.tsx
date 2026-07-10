@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateProgress } from "@/app/actions/items";
 import { createHighlight } from "@/app/actions/highlights";
-import { saveOcrText } from "@/app/actions/ocr";
 import ReadAloud from "@/components/read-aloud";
 import LookupPanel from "@/components/lookup-panel";
 import NoteComposer from "@/components/note-composer";
@@ -111,7 +110,12 @@ export default function PdfReader({
         setOcr({ running: true, progress: Math.round((i / n) * 100) });
       }
       await worker.terminate();
-      await saveOcrText(itemId, full, JSON.stringify({ pages }));
+      const res = await fetch("/api/ocr", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ itemId, text: full, ocrData: JSON.stringify({ pages }) }),
+      });
+      if (!res.ok) throw new Error(`save failed (HTTP ${res.status})`);
       setOcr({ running: false, progress: 100 });
       router.refresh();
     } catch (e) {
