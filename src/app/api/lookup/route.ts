@@ -95,12 +95,17 @@ export async function GET(request: NextRequest) {
   if (!q) return Response.json({ error: "Nothing to look up." }, { status: 400 });
 
   const term = q.slice(0, 200);
-  const firstWord = term.split(/\s+/)[0].replace(/[^\p{L}\p{N}'-]/gu, "");
+
+  // A dictionary definition only makes sense for a single word. For phrases or
+  // sentences, skip it (otherwise we'd define just the first word, which is
+  // misleading) and rely on Wikipedia + web search.
+  const isSingleWord =
+    !/\s/.test(term) && /^[\p{L}][\p{L}\p{N}'-]*$/u.test(term);
 
   const [dict, wiki] = await Promise.all([
-    firstWord ? fetchDefinition(firstWord) : Promise.resolve(null),
+    isSingleWord ? fetchDefinition(term) : Promise.resolve(null),
     fetchWiki(term),
   ]);
 
-  return Response.json({ term, word: firstWord, dict, wiki });
+  return Response.json({ term, word: isSingleWord ? term : null, dict, wiki });
 }
