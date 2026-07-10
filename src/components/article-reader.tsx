@@ -38,6 +38,19 @@ export default function ArticleReader({
   const [lookupTerm, setLookupTerm] = useState<string | null>(null);
   const [composeQuote, setComposeQuote] = useState<string | null>(null);
 
+  // Scroll to a highlight when the Annotations panel requests it.
+  useEffect(() => {
+    const onGoto = (e: Event) => {
+      const id = (e as CustomEvent).detail?.id;
+      if (!id) return;
+      ref.current
+        ?.querySelector(`[data-hl="${id}"]`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    };
+    window.addEventListener("linkstash:goto", onGoto);
+    return () => window.removeEventListener("linkstash:goto", onGoto);
+  }, []);
+
   // (Re)render clean HTML and paint all highlights whenever inputs change.
   useEffect(() => {
     const container = ref.current;

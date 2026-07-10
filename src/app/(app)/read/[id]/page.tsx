@@ -3,13 +3,11 @@ import { notFound } from "next/navigation";
 import ArticleReader from "@/components/article-reader";
 import EpubReader from "@/components/epub-reader";
 import FavoriteButton from "@/components/favorite-button";
-import HighlightsList from "@/components/highlights-list";
 import ItemActions from "@/components/item-actions";
 import ItemNotes from "@/components/item-notes";
 import ItemOrganizer from "@/components/item-organizer";
 import PdfReader from "@/components/pdf-reader";
 import ReadAloud from "@/components/read-aloud";
-import { listItemNotes } from "@/lib/notes";
 import { listItemBookmarks } from "@/lib/bookmarks";
 import { requireUser } from "@/lib/dal";
 import { getItem, listCollections } from "@/lib/items";
@@ -31,7 +29,6 @@ export default async function ReaderPage({
   if (!item) notFound();
 
   const allCollections = await listCollections(userId);
-  const notes = await listItemNotes(userId, item.id);
   const bookmarks = (await listItemBookmarks(userId, item.id)).map((b) => ({
     id: b.id,
     locator: b.locator,
@@ -60,14 +57,7 @@ export default async function ReaderPage({
           {format === "html" && item.textContent && (
             <ReadAloud text={item.textContent} />
           )}
-          <ItemNotes
-            itemId={item.id}
-            notes={notes.map((n) => ({
-              id: n.id,
-              body: n.body,
-              createdAt: n.createdAt,
-            }))}
-          />
+          <ItemNotes itemId={item.id} />
           <FavoriteButton id={item.id} favorite={item.favorite} className="text-lg" />
           <ItemActions id={item.id} status={item.status as ItemStatus} />
         </div>
@@ -120,14 +110,6 @@ export default async function ReaderPage({
                   locator: h.locator,
                 }))}
               />
-              <HighlightsList
-                highlights={item.highlights.map((h) => ({
-                  id: h.id,
-                  text: h.text,
-                  color: h.color,
-                  note: h.note,
-                }))}
-              />
             </>
           ) : (
             <p className="text-muted">This item has no readable content.</p>
@@ -146,14 +128,6 @@ export default async function ReaderPage({
                 note: h.note,
               }))}
             />
-            <HighlightsList
-              highlights={item.highlights.map((h) => ({
-                id: h.id,
-                text: h.text,
-                color: h.color,
-                note: h.note,
-              }))}
-            />
           </>
         ) : format === "epub" ? (
           <>
@@ -166,14 +140,6 @@ export default async function ReaderPage({
                 id: h.id,
                 color: h.color,
                 locator: h.locator,
-              }))}
-            />
-            <HighlightsList
-              highlights={item.highlights.map((h) => ({
-                id: h.id,
-                text: h.text,
-                color: h.color,
-                note: h.note,
               }))}
             />
           </>

@@ -155,6 +155,21 @@ export default function PdfReader({
     if (!loading) renderPage(page);
   }, [page, zoom, loading, renderPage]);
 
+  // Jump to a highlight's page when the Annotations panel requests it.
+  useEffect(() => {
+    const onGoto = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      try {
+        const loc = detail?.locator ? JSON.parse(detail.locator) : null;
+        if (loc?.page) setPage(Math.max(1, loc.page));
+      } catch {
+        /* not a PDF locator */
+      }
+    };
+    window.addEventListener("linkstash:goto", onGoto);
+    return () => window.removeEventListener("linkstash:goto", onGoto);
+  }, []);
+
   // Re-render on resize (debounced).
   useEffect(() => {
     let t: ReturnType<typeof setTimeout>;

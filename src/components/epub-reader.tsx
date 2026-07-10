@@ -46,6 +46,20 @@ export default function EpubReader({
       renditionRef.current?.themes?.fontSize(`${fontPct}%`);
     } catch {}
   }, [fontPct]);
+
+  // Jump to a highlight (CFI) when the Annotations panel requests it.
+  useEffect(() => {
+    const onGoto = (e: Event) => {
+      const loc = (e as CustomEvent).detail?.locator;
+      if (loc) {
+        try {
+          renditionRef.current?.display(loc);
+        } catch {}
+      }
+    };
+    window.addEventListener("linkstash:goto", onGoto);
+    return () => window.removeEventListener("linkstash:goto", onGoto);
+  }, []);
   const [selection, setSelection] = useState<{ cfi: string; text: string } | null>(
     null,
   );
