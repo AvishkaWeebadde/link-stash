@@ -7,9 +7,11 @@ import ReadAloud from "@/components/read-aloud";
 export default function PdfReader({
   itemId,
   initialPage,
+  fallbackText = "",
 }: {
   itemId: string;
   initialPage: number;
+  fallbackText?: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -157,7 +159,7 @@ export default function PdfReader({
         <span className="text-xs text-faint">{Math.round(zoom * 100)}%</span>
         <NavBtn onClick={() => setZoom((z) => Math.min(3, z + 0.15))} disabled={zoom >= 3} label="+" />
         <span className="h-4 w-px bg-line" />
-        <ReadAloud text={pageText} />
+        <ReadAloud text={pageText || fallbackText} />
       </div>
       <div ref={containerRef} className="flex justify-center">
         <canvas ref={canvasRef} className="rounded-lg shadow-sm" />

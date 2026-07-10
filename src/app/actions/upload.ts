@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/dal";
 import { indexItem } from "@/lib/search";
 import { writeUpload } from "@/lib/storage";
+import { extractPdfText, extractEpubText } from "@/lib/doc-text";
 import type { SaveState } from "@/app/actions/items";
 
 const MAX_BYTES = 50 * 1024 * 1024; // 50 MB
@@ -57,16 +58,32 @@ export async function uploadFile(
     select: { id: true },
   });
 
+  let extractedText = "";
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
     const relPath = await writeUpload(userId, item.id, ext, buffer);
-    await db.item.update({ where: { id: item.id }, data: { filePath: relPath } });
+
+    // Pull out the text so the document can be read aloud and searched.
+    const extracted =
+      format === "pdf"
+        ? await extractPdfText(buffer)
+        : await extractEpubText(buffer);
+    extractedText = extracted.text;
+
+    await db.item.update({
+      where: { id: item.id },
+      data: {
+        filePath: relPath,
+        textContent: extracted.text || null,
+        wordCount: extracted.words || null,
+      },
+    });
   } catch {
     await db.item.delete({ where: { id: item.id } });
     return { error: "Failed to store the file." };
   }
 
-  await indexItem(item.id, userId, title, title);
+  await indexItem(item.id, userId, title, `${title}\n${extractedText}`);
   revalidatePath("/library");
   redirect(`/read/${item.id}`);
 }

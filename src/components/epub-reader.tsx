@@ -15,10 +15,12 @@ type ExistingHighlight = { id: string; color: string; locator: string | null };
 export default function EpubReader({
   itemId,
   initialCfi,
+  fallbackText = "",
   highlights,
 }: {
   itemId: string;
   initialCfi: string | null;
+  fallbackText?: string;
   highlights: ExistingHighlight[];
 }) {
   const viewerRef = useRef<HTMLDivElement>(null);
@@ -166,7 +168,7 @@ export default function EpubReader({
           <span className="w-9 text-center text-xs text-faint">{fontPct}%</span>
           <ZoomBtn onClick={() => setFontPct((p) => Math.min(200, p + 10))} label="A+" />
         </div>
-        <ReadAloud text={sectionText} />
+        <ReadAloud text={sectionText || fallbackText} />
       </div>
 
       <div className="relative rounded-xl border border-line bg-surface">

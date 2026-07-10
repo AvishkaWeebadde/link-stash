@@ -120,6 +120,7 @@ export default async function ReaderPage({
             <PdfReader
               itemId={item.id}
               initialPage={item.locator ? parseInt(item.locator, 10) || 1 : 1}
+              fallbackText={item.textContent ?? ""}
             />
             <HighlightsList
               highlights={item.highlights.map((h) => ({
@@ -135,6 +136,7 @@ export default async function ReaderPage({
             <EpubReader
               itemId={item.id}
               initialCfi={item.locator}
+              fallbackText={item.textContent ?? ""}
               highlights={item.highlights.map((h) => ({
                 id: h.id,
                 color: h.color,
