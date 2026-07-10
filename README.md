@@ -20,6 +20,12 @@ Grab the latest installer from the
 (Windows `.exe`). Installers are built automatically by CI on every tagged
 release. Prefer to build it yourself? See [Desktop app](#️-desktop-app-tauri).
 
+> **Windows SmartScreen note:** LinkStash is free and open source, so its
+> installer isn't code-signed (certificates cost money and add little for an
+> OSS project). Windows may show a blue *"Windows protected your PC"* screen —
+> click **More info → Run anyway**. The source is all here if you'd rather
+> build it yourself.
+
 ---
 
 ## ✨ Features
