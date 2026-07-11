@@ -86,7 +86,12 @@ export default function PdfReader({
       const n = pdf.numPages;
       for (let i = 1; i <= n && ctx; i++) {
         const p = await pdf.getPage(i);
-        const vp = p.getViewport({ scale: 2 });
+        // Render at a high scale so small print resolves well. Tesseract likes
+        // roughly 300dpi; a PDF point is 1/72in, so scale ~3.5 ≈ 250–300dpi for
+        // typical page sizes. Capped by pixel budget to avoid huge canvases.
+        const base = p.getViewport({ scale: 1 });
+        const scale = Math.min(3.5, 2600 / Math.max(base.width, base.height));
+        const vp = p.getViewport({ scale: Math.max(2, scale) });
         cvs.width = vp.width;
         cvs.height = vp.height;
         await p.render({ canvasContext: ctx, viewport: vp }).promise;
