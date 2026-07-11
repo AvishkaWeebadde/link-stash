@@ -78,9 +78,16 @@ async function run() {
   log("Pruning unused bundle weight…");
   await prune(SERVER);
 
-  // 5. Bundle the Node runtime that will execute server.js.
+  // 5. Bundle the Node runtime that will execute server.js. We keep the name
+  //    "node.exe" on every OS (it's just a filename the Rust shell launches);
+  //    on macOS/Linux the runner's own node is copied and made executable.
   log(`Bundling Node runtime from ${process.execPath}`);
-  await copyFile(process.execPath, path.join(RES, "node.exe"));
+  const nodeDest = path.join(RES, "node.exe");
+  await copyFile(process.execPath, nodeDest);
+  if (process.platform !== "win32") {
+    const { chmod } = await import("node:fs/promises");
+    await chmod(nodeDest, 0o755);
+  }
 
   // 6. Generate a migrated, empty template database.
   log("Generating template database…");

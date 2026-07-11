@@ -37,8 +37,23 @@ git tag v1.0.0
 git push origin main --tags
 ```
 
-The workflow builds the Windows installer, signs it, generates `latest.json`,
-and publishes a GitHub Release with the installer, its `.sig`, and the manifest.
+The workflow builds installers on Windows, macOS, and Linux in parallel, signs
+each, generates a per-platform manifest fragment, merges them into one
+`latest.json`, and publishes a GitHub Release with every installer, its `.sig`,
+and the manifest.
+
+## Platforms
+
+| OS | Bundles | Status |
+|----|---------|--------|
+| Windows | NSIS `-setup.exe` | Verified. Unsigned installer → SmartScreen "More info → Run anyway". |
+| macOS | `.dmg` + `.app.tar.gz` (updater) | Built by CI, **not yet verified on hardware**. Unsigned → Gatekeeper: right-click → Open (no paid Apple cert). |
+| Linux | `.AppImage` + `.deb` | Built by CI, **not yet verified on hardware**. AppImage needs `libwebkit2gtk-4.1` installed at runtime. |
+
+The **release job runs even if a platform build fails**, so a broken macOS or
+Linux job never blocks the Windows release — the failed platform is simply
+absent from that release's `latest.json`. Each platform's updater key is:
+`windows-x86_64`, `darwin-aarch64`, `linux-x86_64`.
 
 ## How auto-update works at runtime
 
