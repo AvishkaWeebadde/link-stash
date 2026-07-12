@@ -152,13 +152,15 @@ jobs:
           body: "Download the installer for your OS below and run it. Existing installs update themselves automatically."
           draft: false
           fail_on_unmatched_files: false
+          # Recursive globs: downloaded artifacts keep their nested bundle paths
+          # (dist/src-tauri/target/release/bundle/…). Only latest.json is flat.
           files: |
-            dist/*-setup.exe
-            dist/*-setup.exe.sig
-            dist/*.app.tar.gz
-            dist/*.app.tar.gz.sig
-            dist/*.dmg
-            dist/*.AppImage
-            dist/*.AppImage.sig
-            dist/*.deb
+            dist/**/*-setup.exe
+            dist/**/*-setup.exe.sig
+            dist/**/*.app.tar.gz
+            dist/**/*.app.tar.gz.sig
+            dist/**/*.dmg
+            dist/**/*.AppImage
+            dist/**/*.AppImage.sig
+            dist/**/*.deb
             dist/latest.json
