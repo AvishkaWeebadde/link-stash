@@ -94,6 +94,53 @@ export async function createNote(
   redirect(`/read/${item.id}`);
 }
 
+/**
+ * Fetch and store the full content of an imported article the first time it's
+ * opened. Imported links have a URL and title but no body; this hydrates them
+ * on demand so bulk imports stay fast. Idempotent and safe to call repeatedly.
+ */
+export async function hydrateArticle(
+  id: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const { userId } = await requireUser();
+  const item = await db.item.findFirst({
+    where: { id, userId },
+    select: { id: true, url: true, contentHtml: true, type: true },
+  });
+  if (!item) return { ok: false, error: "Not found" };
+  if (item.contentHtml) return { ok: true }; // already hydrated
+  if (item.type !== "article" || !item.url) {
+    return { ok: false, error: "Nothing to fetch" };
+  }
+
+  try {
+    const article = await extractArticle(item.url);
+    await db.item.update({
+      where: { id },
+      data: {
+        title: article.title || undefined,
+        author: article.author,
+        siteName: article.siteName,
+        excerpt: article.excerpt,
+        lang: article.lang,
+        contentHtml: article.contentHtml,
+        textContent: article.textContent,
+        wordCount: article.wordCount,
+        coverImage: article.coverImage,
+      },
+    });
+    await indexItem(id, userId, article.title, article.textContent);
+    revalidatePath(`/read/${id}`);
+    revalidatePath("/library");
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Failed to fetch this page.",
+    };
+  }
+}
+
 async function ownItem(userId: string, id: string) {
   const item = await db.item.findFirst({ where: { id, userId }, select: { id: true } });
   if (!item) throw new Error("Not found");

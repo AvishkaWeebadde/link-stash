@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import ArticleHydrator from "@/components/article-hydrator";
 import ArticleReader from "@/components/article-reader";
 import EpubReader from "@/components/epub-reader";
 import FavoriteButton from "@/components/favorite-button";
@@ -111,6 +112,8 @@ export default async function ReaderPage({
                 }))}
               />
             </>
+          ) : item.url && type === "article" ? (
+            <ArticleHydrator id={item.id} url={item.url} />
           ) : (
             <p className="text-muted">This item has no readable content.</p>
           )
