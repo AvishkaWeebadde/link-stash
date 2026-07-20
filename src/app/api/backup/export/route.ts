@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
+import os from "node:os";
+import path from "node:path";
+import fs from "node:fs/promises";
+import { existsSync } from "node:fs";
 import JSZip from "jszip";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/dal";
 import { readUpload } from "@/lib/storage";
+import { IS_LOCAL } from "@/lib/mode";
 
 /**
  * Export the current user's entire library as a portable .zip:
@@ -61,10 +66,23 @@ export async function GET() {
 
   const buf = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
   const stamp = new Date().toISOString().slice(0, 10);
+  const filename = `linkstash-backup-${stamp}.zip`;
+
+  // On the desktop the server runs on your own machine, so write the backup
+  // straight to your Downloads folder and hand back the exact path to show.
+  // In hosted/web mode there's no user filesystem, so stream it as a download.
+  if (IS_LOCAL) {
+    const downloads = path.join(os.homedir(), "Downloads");
+    const dir = existsSync(downloads) ? downloads : os.homedir();
+    const dest = path.join(dir, filename);
+    await fs.writeFile(dest, buf);
+    return NextResponse.json({ saved: true, path: dest, filename, items: exported.length });
+  }
+
   return new NextResponse(new Uint8Array(buf), {
     headers: {
       "content-type": "application/zip",
-      "content-disposition": `attachment; filename="linkstash-backup-${stamp}.zip"`,
+      "content-disposition": `attachment; filename="${filename}"`,
     },
   });
 }

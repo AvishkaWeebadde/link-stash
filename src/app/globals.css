@@ -288,3 +288,26 @@ mark[data-hl] {
 .pdf-ocr-layer ::selection {
   background: color-mix(in srgb, var(--accent) 35%, transparent);
 }
+
+/* Indeterminate progress bar (used while a backup is being prepared). */
+.ls-indeterminate {
+  position: relative;
+  overflow: hidden;
+}
+.ls-indeterminate::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  border-radius: inherit;
+  background: var(--accent);
+  animation: ls-indeterminate 1.15s ease-in-out infinite;
+}
+@keyframes ls-indeterminate {
+  0% { left: -45%; }
+  100% { left: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ls-indeterminate::after { animation: none; left: 0; width: 100%; opacity: 0.5; }
+}
