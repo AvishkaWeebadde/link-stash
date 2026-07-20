@@ -60,8 +60,20 @@ fn strip_verbatim(p: PathBuf) -> PathBuf {
     }
 }
 
+/// Ports the app prefers, in order. The browser extension probes this same
+/// list to find the running app (it can't discover a random port), so keep it
+/// in sync with `PORTS` in extension/background.js. Falls back to a random free
+/// port only if all preferred ones are taken.
+#[cfg(not(debug_assertions))]
+const PREFERRED_PORTS: [u16; 8] = [41797, 41798, 41799, 41800, 41801, 41802, 41803, 41804];
+
 #[cfg(not(debug_assertions))]
 fn find_free_port() -> u16 {
+    for p in PREFERRED_PORTS {
+        if std::net::TcpListener::bind(("127.0.0.1", p)).is_ok() {
+            return p; // free right now; the server binds it a moment later
+        }
+    }
     std::net::TcpListener::bind("127.0.0.1:0")
         .and_then(|l| l.local_addr())
         .map(|a| a.port())
