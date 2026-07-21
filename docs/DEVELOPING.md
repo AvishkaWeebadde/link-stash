@@ -14,7 +14,7 @@ You need these installed once:
 |------|-----|-------|
 | **Node.js** (LTS) | Next.js build + runtime | `npm install` also runs `postinstall` → `scripts/setup.mjs` (generates Prisma client, copies the PDF worker) |
 | **Rust** (stable) + **MSVC build tools** | Tauri desktop compile | `cargo` must be on PATH — it lives at `~/.cargo/bin` |
-| **The updater signing key** | Every `tauri build` requires it | Private key at `C:\Users\Avishka\.linkstash-keys\linkstash.key` (no password). **Back it up** — losing it breaks auto-update for all installs. |
+| **The updater signing key** | Every `tauri build` requires it | Private key at `%USERPROFILE%\.linkstash-keys\linkstash.key` (no password). **Back it up** — losing it breaks auto-update for all installs. |
 
 First-time repo setup:
 
@@ -71,7 +71,7 @@ npm run db:studio     # visual DB browser
 This is the full "test it as a real installed app" cycle. Do this **once per
 committed milestone**, not after every edit (that's what `tauri:dev` is for).
 
-Run from the repo root (`f:/New folder/linkstash`), Git Bash:
+Run from the repo root, in Git Bash:
 
 ```bash
 # 1. Environment: cargo on PATH + signing key (build FAILS unsigned)
@@ -89,7 +89,7 @@ taskkill //IM linkstash.exe //F 2>/dev/null
 ./src-tauri/target/release/bundle/nsis/LinkStash_<version>_x64-setup.exe //S
 
 # 4. Launch the installed build
-"C:/Users/Avishka/AppData/Local/LinkStash/linkstash.exe"
+"$LOCALAPPDATA/LinkStash/linkstash.exe"
 ```
 
 > **Git Bash slash escaping:** `//IM`, `//F`, `//S` are the doubled form of the
@@ -101,10 +101,10 @@ Verify what actually got installed:
 ```bash
 # read the installed exe's version
 powershell.exe -NoProfile -Command \
-  "(Get-Item 'C:/Users/Avishka/AppData/Local/LinkStash/linkstash.exe').VersionInfo.ProductVersion"
+  "(Get-Item \"$env:LOCALAPPDATA\LinkStash\linkstash.exe\").VersionInfo.ProductVersion"
 ```
 
-**Install location:** `C:\Users\Avishka\AppData\Local\LinkStash\`
+**Install location:** `%LOCALAPPDATA%\LinkStash\`
 **App data / DB:** `%APPDATA%\app.linkstash.desktop\` (DB seeded from a template
 on first run).
 
@@ -195,7 +195,7 @@ export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
 npm run tauri:build
 taskkill //IM linkstash.exe //F 2>/dev/null
 ./src-tauri/target/release/bundle/nsis/LinkStash_<version>_x64-setup.exe //S
-"C:/Users/Avishka/AppData/Local/LinkStash/linkstash.exe"
+"$LOCALAPPDATA/LinkStash/linkstash.exe"
 
 # --- release ---
 git tag vX.Y.Z && git push origin main --tags
