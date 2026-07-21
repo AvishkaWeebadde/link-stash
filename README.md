@@ -1,24 +1,30 @@
 # 📚 LinkStash
 
-**Your personal knowledge library.** Save articles, research papers (PDF), and
-books (EPUB) in one place. Read them distraction-free, highlight passages, take
-notes, organize with tags and collections, and search across everything you've
-ever read.
+**The local-first read-later app you actually own.** Pocket shut down. Omnivore
+shut down. LinkStash is the open-source alternative that can't — it saves web
+articles, research papers (PDF), and books (EPUB) into a library that lives in a
+folder on *your* machine. Read distraction-free, highlight and annotate, search
+across everything, no account and no cloud required.
 
-A **local-first desktop app** (Windows/macOS/Linux via Tauri) — no login, fully
-offline, your data in a folder you control. Open source.
+A **local-first desktop app** for Windows, macOS, and Linux (built with Tauri) —
+no login, fully offline, MIT-licensed. A multi-user web build shares the same
+codebase if you'd rather self-host it.
 
-> Built as a modern, own-your-data alternative to read-later apps — extended for
-> research and book reading. A multi-user web build shares the same codebase.
+![LinkStash library view](docs/images/library.png)
 
 ---
 
 ## ⬇️ Download
 
 Grab the latest installer from the
-[**Releases**](https://github.com/AvishkaWeebadde/link-stash/releases) page
-(Windows `.exe`). Installers are built automatically by CI on every tagged
-release. Prefer to build it yourself? See [Desktop app](#️-desktop-app-tauri).
+[**Releases**](https://github.com/AvishkaWeebadde/link-stash/releases) page —
+Windows (`.exe`), macOS (`.dmg`), and Linux (`.AppImage` / `.deb`), all built
+automatically by CI on every tagged release. Once installed, the app
+self-updates from future signed releases. Prefer to build it yourself? See
+[Desktop app](#️-desktop-app-tauri).
+
+> Windows/Linux are the most-tested; macOS builds are produced by CI but have
+> had less hands-on testing — feedback welcome.
 
 > **Windows SmartScreen note:** LinkStash is free and open source, so its
 > installer isn't code-signed (certificates cost money and add little for an
