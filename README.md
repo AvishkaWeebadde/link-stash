@@ -55,8 +55,18 @@ release. Prefer to build it yourself? See [Desktop app](#️-desktop-app-tauri).
   unread / reading / archived, and star favorites.
 - **Search everything** — full-text search across titles and content (including
   OCR'd text), powered by SQLite FTS5 with relevance ranking.
+- **Import & back up** 📥 — bring in browser or Pocket bookmarks (`.html`), a
+  plain list of URLs (`.txt`), or Zotero/Mendeley references (`.bib`); export
+  your entire library to a zip and restore it on any machine.
+- **Save from your browser** 🧩 — a "Save to LinkStash" extension (Chrome &
+  Firefox) stashes the current page, or any link you right-click, straight into
+  your local library in one click.
+- **Encrypted shared-folder sync** 🔄 — optionally keep your library in step
+  across machines through a folder you already sync (Dropbox, OneDrive, …).
+  Everything is encrypted, and it's additive and fully opt-in.
 - **Local-first desktop app** — no login, fully offline; your data lives in a
-  folder you control. A multi-user web build shares the same codebase.
+  folder you control, and the app **self-updates** from signed releases. A
+  multi-user web build shares the same codebase.
 
 ## 🛠️ Tech stack
 
@@ -198,7 +208,7 @@ Shipped:
 Next:
 
 - [ ] **Code-signed installers** + Windows SmartScreen-clean install
-- [ ] Export to more formats (Pocket, OPML)
+- [ ] More import/export formats (OPML, RSS)
 - [ ] Optional AI (auto-tag, summaries, "ask your library") — opt-in, BYO-key
 
 Current release: **v1.3.0**. Toward the next milestone: code-signing + a
