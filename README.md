@@ -98,6 +98,10 @@ npm run dev
 
 Open <http://localhost:3000>, create an account, and start stashing.
 
+> Working on LinkStash itself? The [developer handbook](docs/DEVELOPING.md) has
+> the full solo workflow: run modes, the desktop build + install cycle,
+> releasing, and every hard-won gotcha in one place.
+
 ## 🖥️ Desktop app (Tauri)
 
 LinkStash ships as a native desktop app — **no login, fully offline, your data
@@ -182,20 +186,23 @@ Shipped:
 - [x] Bookmarks
 - [x] PDF area highlighting + text selection
 - [x] OCR for scanned PDFs (offline) — searchable, read-aloud-able, selectable
+- [x] Higher-accuracy OCR option (best LSTM model + higher render resolution)
 - [x] Text/page zoom with pan
 - [x] Published-installer release pipeline (tag → GitHub Release)
+- [x] **macOS & Linux** release builds (alongside Windows, merged updater manifest)
+- [x] **Auto-update** (signed installers + `latest.json`, silent self-update)
+- [x] Import (browser bookmarks, URL lists, BibTeX) + library backup & restore
+- [x] Browser extension for one-click saving
+- [x] Optional encrypted shared-folder sync (additive, opt-in) — _v1.3.0_
 
 Next:
 
 - [ ] **Code-signed installers** + Windows SmartScreen-clean install
-- [ ] **macOS & Linux** release builds
-- [ ] **Auto-update**
-- [ ] Higher-accuracy OCR option; OCR quality/polish
-- [ ] Import (Pocket, browser bookmarks, OPML) and export
-- [ ] Browser extension for one-click saving
+- [ ] Export to more formats (Pocket, OPML)
 - [ ] Optional AI (auto-tag, summaries, "ask your library") — opt-in, BYO-key
 
-Toward **v1.0**: code-signing + cross-platform builds + a polish pass.
+Current release: **v1.3.0**. Toward the next milestone: code-signing + a
+polish pass.
 
 ## 🤝 Contributing
 
