@@ -33,6 +33,10 @@ model Item {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Stable identity shared across devices for folder sync (see lib/sync.ts).
+  // Null until an item is first synced or backfilled.
+  syncId String? @unique
+
   // "article" | "pdf" | "epub" | "note"
   type String @default("article")
   // "unread" | "reading" | "archived"

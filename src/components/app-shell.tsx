@@ -93,7 +93,7 @@ export default function AppShell({
               icon="⭐"
               badge={counts.favorite}
             />
-            <NavItem href="/import" label="Import & backup" icon="🗄️" exact />
+            <NavItem href="/import" label="Import, backup & sync" icon="🗄️" exact />
           </Section>
 
           <Section title="Types">

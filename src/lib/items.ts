@@ -112,6 +112,12 @@ export function ensureItemColumns(): Promise<void> {
         if (!cols.some((c) => c.name === "ocrData")) {
           await db.$executeRawUnsafe(`ALTER TABLE "Item" ADD COLUMN "ocrData" TEXT`);
         }
+        if (!cols.some((c) => c.name === "syncId")) {
+          await db.$executeRawUnsafe(`ALTER TABLE "Item" ADD COLUMN "syncId" TEXT`);
+          await db.$executeRawUnsafe(
+            `CREATE UNIQUE INDEX IF NOT EXISTS "Item_syncId_key" ON "Item"("syncId")`,
+          );
+        }
       } catch {
         /* best effort */
       }
